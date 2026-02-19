@@ -13,6 +13,7 @@ interface Operacion {
 export default function Dashboard() {
   const [operaciones, setOperaciones] = useState<Operacion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchOperaciones = async () => {
@@ -28,6 +29,15 @@ export default function Dashboard() {
 
   const totalOperaciones = operaciones.length;
   const totalFob = operaciones.reduce((acc, op) => acc + (op.fob || 0), 0);
+
+  const handleDelete = async (id: number) => {
+    setDeletingId(id);
+    const { error } = await supabase.from('operaciones').delete().eq('id', id);
+    if (!error) {
+      setOperaciones(ops => ops.filter(op => op.id !== id));
+    }
+    setDeletingId(null);
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 py-10 px-4 md:px-10">
@@ -81,16 +91,17 @@ export default function Dashboard() {
                 <th className="p-4 font-bold">Cliente</th>
                 <th className="p-4 font-bold">FOB</th>
                 <th className="p-4 font-bold">Estado</th>
+                <th className="p-4 font-bold text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="p-6 text-center text-slate-400">Cargando...</td>
+                  <td colSpan={4} className="p-6 text-center text-slate-400">Cargando...</td>
                 </tr>
               ) : operaciones.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="p-6 text-center text-slate-500">No hay operaciones registradas.</td>
+                  <td colSpan={4} className="p-6 text-center text-slate-500">No hay operaciones registradas.</td>
                 </tr>
               ) : (
                 operaciones.map(op => (
@@ -114,6 +125,38 @@ export default function Dashboard() {
                       }>
                         {op.estado}
                       </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={() => handleDelete(op.id)}
+                        disabled={deletingId === op.id}
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg 
+                          font-medium text-xs transition 
+                          ${
+                            deletingId === op.id
+                              ? 'bg-red-900/40 text-red-400 cursor-not-allowed'
+                              : 'bg-slate-700 hover:bg-red-900/40 text-red-400'
+                          }
+                        `}
+                        title="Eliminar operación"
+                      >
+                        {/* Trash icon svg */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"
+                          />
+                        </svg>
+                        {deletingId === op.id ? 'Eliminando...' : 'Eliminar'}
+                      </button>
                     </td>
                   </tr>
                 ))
