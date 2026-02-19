@@ -1,0 +1,2 @@
+mkdir -p app/operaciones
+touch app/operaciones/page.tsx
