@@ -3,109 +3,92 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Navbar from '../../components/Navbar'
 
 export default function NuevaOperacion() {
-  const [cliente, setCliente] = useState('');
-  const [fob, setFob] = useState('');
-  const [flete, setFlete] = useState('');
-  const [seguro, setSeguro] = useState('');
-  const [posicionNcm, setPosicionNcm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const router = useRouter();
+  const [cliente, setCliente] = useState('')
+  const [tipo, setTipo] = useState('Importación')
+  const [pais, setPais] = useState('Argentina')
+  const [fob, setFob] = useState('')
+  const [flete, setFlete] = useState('')
+  const [seguro, setSeguro] = useState('')
+  const [posicionNcm, setPosicionNcm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setLoading(true);
+  const paises = [
+    "Argentina", "Brasil", "Paraguay", "Uruguay", "Bolivia", 
+    "Afganistán", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda", "Arabia Saudita", "Argelia", "Armenia", "Australia", "Austria", "Azerbaiyán", "Bahamas", "Bangladés", "Barbados", "Baréin", "Bélgica", "Belice", "Benín", "Bielorrusia", "Birmania", "Bosnia y Herzegovina", "Botsuana", "Brunéi", "Bulgaria", "Burkina Faso", "Burundi", "Bután", "Cabo Verde", "Camboya", "Camerún", "Canadá", "Catar", "Chad", "Chile", "China", "Chipre", "Ciudad del Vaticano", "Colombia", "Comoras", "Corea del Norte", "Corea del Sur", "Costa de Marfil", "Costa Rica", "Croacia", "Cuba", "Dinamarca", "Dominica", "Ecuador", "Egipto", "El Salvador", "Emiratos Árabes Unidos", "Eritrea", "Eslovaquia", "Eslovenia", "España", "Estados Unidos", "Estonia", "Etiopía", "Filipinas", "Finlandia", "Fiyi", "Francia", "Gabón", "Gambia", "Georgia", "Ghana", "Granada", "Grecia", "Guatemala", "Guyana", "Guinea", "Guinea-Bisáu", "Guinea Ecuatorial", "Haití", "Honduras", "Hungría", "India", "Indonesia", "Irak", "Irán", "Irlanda", "Islandia", "Islas Marshall", "Islas Salomón", "Israel", "Italia", "Jamaica", "Japón", "Jordania", "Kazajistán", "Kenia", "Kirguistán", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letonia", "Líbano", "Liberia", "Libia", "Liechtenstein", "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malasia", "Malaui", "Maldivas", "Malí", "Malta", "Marruecos", "Mauricio", "Mauritania", "México", "Micronesia", "Moldavia", "Mónaco", "Mongolia", "Montenegro", "Mozambique", "Namibia", "Nauru", "Nepal", "Nicaragua", "Níger", "Nigeria", "Noruega", "Nueva Zelanda", "Omán", "Países Bajos", "Pakistán", "Palaos", "Panamá", "Papúa Nueva Guinea", "Perú", "Polonia", "Portugal", "Reino Unido", "República Centroafricana", "República Checa", "República del Congo", "República Democrática del Congo", "República Dominicana", "Ruanda", "Rumania", "Rusia", "Samoa", "San Cristóbal y Nieves", "San Marino", "San Vicente y las Granadinas", "Santa Lucía", "Santo Tomé y Príncipe", "Senegal", "Serbia", "Seychelles", "Sierra Leona", "Singapur", "Siria", "Somalia", "Sri Lanka", "Suazilandia", "Sudáfrica", "Sudán", "Sudán del Sur", "Suecia", "Suiza", "Surinam", "Tailandia", "Tanzania", "Tayikistán", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Turquía", "Tuvalu", "Ucrania", "Uganda", "Uzbekistán", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Yibuti", "Zambia", "Zimbabue"
+  ]
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault()
+    setLoading(true)
     const { error } = await supabase.from('operaciones').insert({
-      cliente,
+      cliente, tipo, pais,
       fob: parseFloat(fob) || 0,
       flete: parseFloat(flete) || 0,
       seguro: parseFloat(seguro) || 0,
-      posicion_ncm: posicionNcm
-    });
-    setLoading(false);
-    if (error) {
-      setErrorMsg('Ocurrió un error al guardar la operación.');
-      return;
-    }
-    router.push('/dashboard');
-  };
+      posicion_ncm: posicionNcm,
+      estado: 'Pendiente'
+    })
+    if (!error) router.push('/operaciones')
+    else alert('Error al guardar')
+    setLoading(false)
+  }
 
   return (
-    <div className="max-w-xl mx-auto py-10 px-4">
-      <h1 className="text-2xl font-bold text-white mb-4">Nueva Operación</h1>
-      <form onSubmit={handleSubmit} className="bg-slate-800 rounded-xl shadow p-6 w-full space-y-5">
-        <div>
-          <label className="block text-slate-400 mb-1 font-medium">Cliente</label>
-          <input
-            type="text"
-            value={cliente}
-            onChange={e => setCliente(e.target.value)}
-            required
-            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 focus:outline-none focus:ring focus:ring-purple-400"
-            placeholder="Nombre del cliente"
-          />
-        </div>
-        <div>
-          <label className="block text-slate-400 mb-1 font-medium">FOB (USD)</label>
-          <input
-            type="number"
-            value={fob}
-            min={0}
-            onChange={e => setFob(e.target.value)}
-            required
-            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 focus:outline-none focus:ring focus:ring-purple-400"
-            placeholder="Valor FOB"
-          />
-        </div>
-        <div>
-          <label className="block text-slate-400 mb-1 font-medium">Flete (USD)</label>
-          <input
-            type="number"
-            value={flete}
-            min={0}
-            onChange={e => setFlete(e.target.value)}
-            required
-            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 focus:outline-none focus:ring focus:ring-purple-400"
-            placeholder="Valor Flete"
-          />
-        </div>
-        <div>
-          <label className="block text-slate-400 mb-1 font-medium">Seguro (USD)</label>
-          <input
-            type="number"
-            value={seguro}
-            min={0}
-            onChange={e => setSeguro(e.target.value)}
-            required
-            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 focus:outline-none focus:ring focus:ring-purple-400"
-            placeholder="Valor Seguro"
-          />
-        </div>
-        <div>
-          <label className="block text-slate-400 mb-1 font-medium">Posición NCM</label>
-          <input
-            type="text"
-            value={posicionNcm}
-            onChange={e => setPosicionNcm(e.target.value)}
-            required
-            className="w-full p-2 rounded bg-slate-900 text-white border border-slate-700 focus:outline-none focus:ring focus:ring-purple-400"
-            placeholder="Ej: 8517.12.00"
-          />
-        </div>
-        {errorMsg && (
-          <div className="text-red-400 text-sm py-2">{errorMsg}</div>
-        )}
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-purple-600 hover:bg-purple-700 transition-colors text-white px-6 py-2 rounded font-bold w-full mt-2 disabled:opacity-50"
-        >
-          {loading ? 'Guardando...' : 'Guardar Operación'}
-        </button>
-      </form>
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      <Navbar />
+      <div className="max-w-2xl mx-auto py-10 px-4">
+        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Nueva Operación</h1>
+        <form onSubmit={handleSubmit} className="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Cliente</label>
+              <input type="text" value={cliente} onChange={e => setCliente(e.target.value)} required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Nombre/Empresa"/>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Tipo</label>
+              <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                <option>Importación</option>
+                <option>Exportación</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">País de Origen/Destino</label>
+            <select value={pais} onChange={e => setPais(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+              {paises.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">FOB (USD)</label>
+              <input type="number" value={fob} onChange={e => setFob(e.target.value)} required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"/>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Flete</label>
+              <input type="number" value={flete} onChange={e => setFlete(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"/>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Seguro</label>
+              <input type="number" value={seguro} onChange={e => setSeguro(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"/>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Posición NCM</label>
+            <input type="text" value={posicionNcm} onChange={e => setPosicionNcm(e.target.value)} required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none" placeholder="0000.00.00"/>
+          </div>
+
+          <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-purple-500/20">
+            {loading ? 'Procesando...' : 'Confirmar y Guardar en Supabase'}
+          </button>
+        </form>
+      </div>
     </div>
-  );
+  )
 }
