@@ -104,7 +104,7 @@ export default function Dashboard() {
                   <td colSpan={4} className="p-6 text-center text-slate-500">No hay operaciones registradas.</td>
                 </tr>
               ) : (
-                operaciones.map(op => (
+                operaciones.map((op) => (
                   <tr key={op.id} className="hover:bg-slate-900/60 transition-colors">
                     <td className="p-4 font-medium text-white">{op.cliente}</td>
                     <td className="p-4 text-purple-400 font-mono">
@@ -130,17 +130,17 @@ export default function Dashboard() {
                       <button
                         onClick={() => handleDelete(op.id)}
                         disabled={deletingId === op.id}
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg 
-                          font-medium text-xs transition 
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-md 
+                          font-medium text-xs transition bg-slate-800 hover:bg-slate-900
                           ${
                             deletingId === op.id
-                              ? 'bg-red-900/40 text-red-400 cursor-not-allowed'
-                              : 'bg-slate-700 hover:bg-red-900/40 text-red-400'
+                              ? 'text-red-300 cursor-not-allowed opacity-60'
+                              : 'text-red-400'
                           }
                         `}
                         title="Eliminar operación"
                       >
-                        {/* Trash icon svg */}
+                        {/* Trash icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="w-4 h-4"
