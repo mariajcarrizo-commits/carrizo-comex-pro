@@ -20,8 +20,199 @@ export default function NuevaOperacion() {
   const router = useRouter()
 
   const paises = [
-    "Argentina", "Brasil", "Paraguay", "Uruguay", "Bolivia", 
-    "Afganistán", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda", "Arabia Saudita", "Argelia""Armenia", "Australia", "Austria", "Azerbaiyán", "Bahamas", "Bangladés", "Barbados", "Baréin", "Bélgica", "Belice", "Benín", "Bielorrusia", "Birmania", "Bosnia y Herzegovina", "Botsuana", "Brunéi", "Bulgaria", "Burkina Faso", "Burundi", "Bután", "Cabo Verde", "Camboya", "Camerún", "Canadá", "Catar", "Chad", "Chile", "China", "Chipre", "Ciudad del Vaticano", "Colombia", "Comoras", "Corea del Norte", "Corea del Sur", "Costa de Marfil", "Costa Rica", "Croacia", "Cuba", "Dinamarca", "Dominica", "Ecuador", "Egipto", "El Salvador", "Emiratos Árabes Unidos", "Eritrea", "Eslovaquia", "Eslovenia", "España", "Estados Unidos", "Estonia", "Etiopía", "Filipinas", "Finlandia", "Fiyi", "Francia", "Gabón", "Gambia", "Georgia", "Ghana", "Granada", "Grecia", "Guatemala", "Guyana", "Guinea", "Guinea-Bisáu", "Guinea Ecuatorial", "Haití", "Honduras", "Hungría", "India", "Indonesia", "Irak", "Irán", "Irlanda", "Islandia", "Islas Marshall", "Islas Salomón", "Israel", "Italia", "Jamaica", "Japón", "Jordania", "K, "Kirguistán", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letonia", "Líbano", "Liberia", "Libia", "Liechtenstein", "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malasia", "Malaui", "Maldivas", "Malí", "Malta", "Marruecos", "Mauricio", "Mauritania", "México", "Micronesia", "Moldavia", "Mónaco", "Mongolia", "Montenegro", "Mozambique", "Namibia", "Nauru", "Nepal", "Nicaragua", "Níger", "Nigeria", "Noruega", "Nueva Zelanda", "Omán", "Países Bajos", "Pakistán", "Palaos", "Panamá", "Papúa Nueva Guinea", "Perú", "Polonia", "Portugal", "Reino Unido", "República Centroafricana", "República Checa", "República del Congo", "República Democrática del Congo", "República Dominicana", "Ruanda", "Rumania", "Rusia", "Samoa", "San Cristóbal y Nieves", "San Marino", "San Vicente y las Granadinas", "Santa Lucía", "Santo Tomé y Príncipe", "Senegal", "Serbia", "Seychelles", "Sierra Leona", "Singapur", "Siria", "Somalia", "Sri Lanka", "Suazilandia", "Sudáfrica", "Sudán", "Sudán del Sur", "m", "Tailandia", "Tanzania", "Tayikistán", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Turquía", "Tuvalu", "Ucrania", "Uganda", "Uzbekistán", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Yibuti", "Zambia", "Zimbabue"
+    "Argentina",
+    "Brasil",
+    "Paraguay",
+    "Uruguay",
+    "Bolivia",
+    "Chile",
+    "Colombia",
+    "Perú",
+    "Ecuador",
+    "Venezuela",
+    "México",
+    "Esos Unidos",
+    "Canadá",
+    "China",
+    "Japón",
+    "Corea del Sur",
+    "India",
+    "Alemania",
+    "Francia",
+    "Italia",
+    "España",
+    "Reino Unido",
+    "Países Bajos",
+    "Bélgica",
+    "Suiza",
+    "Austria",
+    "Portugal",
+    "Grecia",
+    "Turquía",
+    "Rusia",
+    "Polonia",
+    "República Checa",
+    "Hungría",
+    "Rumania",
+    "Suecia",
+    "Noruega",
+    "Dinamarca",
+    "Finlandia",
+    "Irlanda",
+    "Australia",
+    "Nueva Zelanda",
+    "Sudáfrica",
+    "Egipto",
+    "Marruecos",
+    "Nigeria",
+    "Kenia",
+el",
+    "Arabia Saudita",
+    "Emiratos Árabes Unidos",
+    "Irán",
+    "Irak",
+    "Tailandia",
+    "Vietnam",
+    "Singapur",
+    "Malasia",
+    "Indonesia",
+    "Filipinas",
+    "Afganistán",
+    "Albania",
+    "Andorra",
+    "Angola",
+    "Antigua y Barbuda",
+    "Argelia",
+    "Armenia",
+    "Azerbaiyán",
+    "Bahamas",
+    "Bangladés",
+    "Barbados",
+    "Baréin",
+    "Belice",
+    "Benín",
+    "Bielorrusia",
+    "Birmania",
+    "Bosnia y Herzegovina",
+    "Botsuana",
+    "Brunéi",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Bután",
+    "Cabo Verde",
+    "Camboya",
+    "Camerún",
+    "Catar",
+    "Chad",
+    "Chipre",
+    "Ciudad del Vaticano",
+    "Comoras",
+    "Corea del Norte",
+    "Costa de Marfil",
+    "Costa Rica",
+    "Croacia",
+    "Cuba",
+    "Dominica",
+    "El Salvador",
+    "Eritrea",
+    "Eslovaquia",
+    "Eslovenia",
+    "Estonia",
+    "Etiopía",
+    "Fiyi",
+    "Gabón",
+    "Gambia",
+    "Georgia",
+    "Ghana",
+    "Granada",
+    "Guatemala",
+    "Guinea",
+   áu",
+    "Guinea Ecuatorial",
+    "Guyana",
+    "Haití",
+    "Honduras",
+    "Islandia",
+    "Islas Marshall",
+    "Islas Salomón",
+    "Jamaica",
+    "Jordania",
+    "Kazajistán",
+    "Kirguistán",
+    "Kiribati",
+    "Kuwait",
+    "Laos",
+    "Lesoto",
+    "Letonia",
+    "Líbano",
+    "Liberia",
+    "Libia",
+    "Liechtenstein",
+    "Lituania",
+    "Luxemburgo",
+    "Macedonia del Norte",
+    "Madagascar",
+    "Malaui",
+    "Maldivas",
+    "Malí",
+    "Malta",
+    "Mauricio",
+    "Mauritania",
+    "Micronesia",
+    "Moldavia",
+    "Mónaco",
+    "Mongolia",
+    "Montenegro",
+    "Mozambique",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Nicaragua",
+    "Níger",
+    "Omán",
+    "Pakistán",
+    "Palaos",
+    "Panamá",
+    "Papúa Nueva Guinea",
+    "República Centroafricana",
+    "República del Congo",
+    "República Democrática del Congo",
+    "República Dominicana",
+    "Ruanda",
+    "Samoa",
+    "San Cristóbal y Nieves",
+    "San Marino",
+    "San Vicente y las Granadinas",
+    "Santa Lomé y Príncipe",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leona",
+    "Siria",
+    "Somalia",
+    "Sri Lanka",
+    "Suazilandia",
+    "Sudán",
+    "Sudán del Sur",
+    "Surinam",
+    "Tanzania",
+    "Tayikistán",
+    "Timor Oriental",
+    "Togo",
+    "Tonga",
+    "Trinidad y Tobago",
+    "Túnez",
+    "Turkmenistán",
+    "Tuvalu",
+    "Ucrania",
+    "Uganda",
+    "Uzbekistán",
+    "Vanuatu",
+    "Yemen",
+    "Yibuti",
+    "Zambia",
+    "Zimbabue"
   ]
 
   useEffect(() => {
@@ -43,16 +234,20 @@ export default function NuevaOperacion() {
     }
   }, [posicionNcm])
 
-  useEffect(() => {
+  useEffec{
     const fobNum = parseFloat(fob) || 0
     const fleteNum = parseFloat(flete) || 0
     const seguroNum = parseFloat(seguro) || 0
     setBaseImponible(fobNum + fleteNum + seguroNum)
-  }, [fob, flete, seguro const handleSubmit = async (e) => {
+  }, [fob, flete, seguro])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     const { error } = await supabase.from('operaciones').insert({
-      cliente, tipo, pais,
+      cliente,
+      tipo,
+      pais,
       fob: parseFloat(fob) || 0,
       flete: parseFloat(flete) || 0,
       seguro: parseFloat(seguro) || 0,
@@ -68,17 +263,30 @@ export default function NuevaOperacion() {
     <div className="min-h-screen bg-slate-900 text-slate-100">
       <Navbar />
       <div className="max-w-2xl mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Nueva Operación</h1>
-        <form onSubmit={handleSubmit} className="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
+        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Nueva Operación
+        </h1>
+        <form onSubmit={handleSubit} className="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Cliente</label>
-             <input type="text" value={cliente} onChange={e => setCliente(e.target.value)} required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Nombre/Empresa"/>
+              <input
+                type="text"
+                value={cliente}
+                onChange={e => setCliente(e.target.value)}
+                required
+                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                placeholder="Nombre/Empresa"
+              />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Tipo</label>
-              <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
-                <option>Importación</option>
+              <select
+                value={tipo}
+                onChange={e => setTipo(e.target.value)}
+                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+              >
+                <option>Importación</optio>
                 <option>Exportación</option>
               </select>
             </div>
@@ -86,23 +294,45 @@ export default function NuevaOperacion() {
 
           <div>
             <label className="block text-sm text-slate-400 mb-1">País de Origen/Destino</label>
-            <select value={pais} onChange={e => setPais(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
-           {paises.map(p => <option key={p} value={p}>{p}</option>)}
+            <select
+              value={pais}
+              onChange={e => setPais(e.target.value)}
+              className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            >
+              {paises.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">FOB (USD)</label>
-              <input type="number" value={fob} onChange={e => setFob(e.target.value)} required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"/>
+              <input
+                type="number"
+                value={fob}
+                onChange={e => setFob(e.target.value)}
+                required
+                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outlineone"
+              />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Flete</label>
-              <input type="number" value={flete} onChange={e => setFlete(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"/>
+              <input
+                type="number"
+                value={flete}
+                onChange={e => setFlete(e.target.value)}
+                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"
+              />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Seguro</label>
-              <input type="number" value={seguro} onChange={e => setSeguro(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"/>
+              <input
+                type="number"
+                value={seguro}
+                onChange={e => setSeguro(e.target.value)}
+                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"
+              />
             </div>
           </div>
 
@@ -111,7 +341,7 @@ export default function NuevaOperacion() {
             <input
               type="text"
               value={posicionNcm}
-              onChange={e => setPosicionNcm(e.target.value)}
+              onChange={e => setosicionNcm(e.target.value)}
               required
               className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"
               placeholder="0000.00.00"
@@ -125,29 +355,28 @@ export default function NuevaOperacion() {
                   <span className="inline-block bg-purple-600/30 text-purple-200 px-3 py-1 rounded-lg text-xs font-bold">
                     DIE: {ncmInfo.DIE}
                   </span>
-                <span className="inline-block bg-purple-600/30 text-purple-200 px-3 py-1 rounded-lg text-xs font-bold">
+                  <span className="inline-block bg-purple-600/30 text-purple-200 px-3 py-1 rounded-lg text-xs font-bold">
                     Tasa Estadística: {ncmInfo.tasa_estadistica}
                   </span>
                 </div>
               </div>
             )}
-          </div>
+        </div>
 
           <div>
             <label className="block text-xs text-slate-400">Base Imponible Estimada:</label>
             <div className="mt-1 text-lg font-bold text-purple-400 bg-slate-900 rounded-lg px-3 py-2 inline-block border border-purple-700">
-              {baseImponible.toLocaleString('es-AR', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2
-              })}
+              ${baseImponible.toLocaleString('es-AR', { minimumFractionDigits: 2 })} USD
             </div>
           </div>
 
-          <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50">
+          <button
+            disabled={loading}
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
             {loading ? 'Procesando...' : 'Guardar Operación'}
           </button>
-        form>
+        </form>
       </div>
     </div>
   )
