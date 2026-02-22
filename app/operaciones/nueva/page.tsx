@@ -20,199 +20,40 @@ export default function NuevaOperacion() {
   const router = useRouter()
 
   const paises = [
-    "Argentina",
-    "Brasil",
-    "Paraguay",
-    "Uruguay",
-    "Bolivia",
-    "Chile",
-    "Colombia",
-    "Perú",
-    "Ecuador",
-    "Venezuela",
-    "México",
-    "Esos Unidos",
-    "Canadá",
-    "China",
-    "Japón",
-    "Corea del Sur",
-    "India",
-    "Alemania",
-    "Francia",
-    "Italia",
-    "España",
-    "Reino Unido",
-    "Países Bajos",
-    "Bélgica",
-    "Suiza",
-    "Austria",
-    "Portugal",
-    "Grecia",
-    "Turquía",
-    "Rusia",
-    "Polonia",
-    "República Checa",
-    "Hungría",
-    "Rumania",
-    "Suecia",
-    "Noruega",
-    "Dinamarca",
-    "Finlandia",
-    "Irlanda",
-    "Australia",
-    "Nueva Zelanda",
-    "Sudáfrica",
-    "Egipto",
-    "Marruecos",
-    "Nigeria",
-    "Kenia",
-el",
-    "Arabia Saudita",
-    "Emiratos Árabes Unidos",
-    "Irán",
-    "Irak",
-    "Tailandia",
-    "Vietnam",
-    "Singapur",
-    "Malasia",
-    "Indonesia",
-    "Filipinas",
-    "Afganistán",
-    "Albania",
-    "Andorra",
-    "Angola",
-    "Antigua y Barbuda",
-    "Argelia",
-    "Armenia",
-    "Azerbaiyán",
-    "Bahamas",
-    "Bangladés",
-    "Barbados",
-    "Baréin",
-    "Belice",
-    "Benín",
-    "Bielorrusia",
-    "Birmania",
-    "Bosnia y Herzegovina",
-    "Botsuana",
-    "Brunéi",
-    "Bulgaria",
-    "Burkina Faso",
-    "Burundi",
-    "Bután",
-    "Cabo Verde",
-    "Camboya",
-    "Camerún",
-    "Catar",
-    "Chad",
-    "Chipre",
-    "Ciudad del Vaticano",
-    "Comoras",
-    "Corea del Norte",
-    "Costa de Marfil",
-    "Costa Rica",
-    "Croacia",
-    "Cuba",
-    "Dominica",
-    "El Salvador",
-    "Eritrea",
-    "Eslovaquia",
-    "Eslovenia",
-    "Estonia",
-    "Etiopía",
-    "Fiyi",
-    "Gabón",
-    "Gambia",
-    "Georgia",
-    "Ghana",
-    "Granada",
-    "Guatemala",
-    "Guinea",
-   áu",
-    "Guinea Ecuatorial",
-    "Guyana",
-    "Haití",
-    "Honduras",
-    "Islandia",
-    "Islas Marshall",
-    "Islas Salomón",
-    "Jamaica",
-    "Jordania",
-    "Kazajistán",
-    "Kirguistán",
-    "Kiribati",
-    "Kuwait",
-    "Laos",
-    "Lesoto",
-    "Letonia",
-    "Líbano",
-    "Liberia",
-    "Libia",
-    "Liechtenstein",
-    "Lituania",
-    "Luxemburgo",
-    "Macedonia del Norte",
-    "Madagascar",
-    "Malaui",
-    "Maldivas",
-    "Malí",
-    "Malta",
-    "Mauricio",
-    "Mauritania",
-    "Micronesia",
-    "Moldavia",
-    "Mónaco",
-    "Mongolia",
-    "Montenegro",
-    "Mozambique",
-    "Namibia",
-    "Nauru",
-    "Nepal",
-    "Nicaragua",
-    "Níger",
-    "Omán",
-    "Pakistán",
-    "Palaos",
-    "Panamá",
-    "Papúa Nueva Guinea",
-    "República Centroafricana",
-    "República del Congo",
-    "República Democrática del Congo",
-    "República Dominicana",
-    "Ruanda",
-    "Samoa",
-    "San Cristóbal y Nieves",
-    "San Marino",
-    "San Vicente y las Granadinas",
-    "Santa Lomé y Príncipe",
-    "Senegal",
-    "Serbia",
-    "Seychelles",
-    "Sierra Leona",
-    "Siria",
-    "Somalia",
-    "Sri Lanka",
-    "Suazilandia",
-    "Sudán",
-    "Sudán del Sur",
-    "Surinam",
-    "Tanzania",
-    "Tayikistán",
-    "Timor Oriental",
-    "Togo",
-    "Tonga",
-    "Trinidad y Tobago",
-    "Túnez",
-    "Turkmenistán",
-    "Tuvalu",
-    "Ucrania",
-    "Uganda",
-    "Uzbekistán",
-    "Vanuatu",
-    "Yemen",
-    "Yibuti",
-    "Zambia",
-    "Zimbabue"
+    "Argentina", "Brasil", "Paraguay", "Uruguay", "Bolivia", "Chile",
+    "Colombia", "Perú", "Ecuador", "Venezuela", "México", "Estados Unidos",
+    "Canadá", "China", "Japón", "Corea del Sur", "India", "Alemania",
+    "Francia", "Italia", "España", "Reino Unido", "Países Bajos", "Bélgica",
+    "Suiza", "Austria", "Portugal", "Grecia", "Turquía", "Rusia",
+    "Polonia", "República Checa", "Hungría", "Rumania", "Suecia", "Noruega",
+    "Dinamarca", "Finlandia", "Irlanda", "Australia", "Nueva Zelanda",
+    "Sudáfrica", "Egipto", "Marruecos", "Nigeria", "Kenia", "Israel",
+    "Arabia Saudita", "Emiratos Árabes Unidos", "Irán", "Irak", "Tailandia",
+    "Vietnam", "Singapur", "Malasia", "Indonesia", "Filipinas", "Afganistán",
+    "Albania", "Andorra", "Angola", "Antigua y Barbuda", "Argelia", "Armenia",
+    "Azerbaiyán", "Bahamas", "Bangladés", "Barbados", "Baréin", "Belice",
+    "Benín", "Bielorrusia", "Birmania", "Bosnia y Herzegovina", "Botsuana",
+    "Brunéi", "Bulgaria", "Burkina Faso", "Burundi", "Bután", "Cabo Verde",
+    "Camboya", "Camerún", "Catar", "Chad", "Chipre", "Ciudad del Vaticano",
+    "Comoras", "Corea del Norte", "Costa de Marfil", "Costa Rica", "Croacia",
+    "Cuba", "Dominica", "El Salvador", "Eritrea", "Eslovaquia", "Eslovenia",
+    "Estonia", "Etiopía", "Fiyi", "Gabón", "Gambia", "Georgia", "Ghana",
+    "Granada", "Guatemala", "Guinea", "Guinea-Bisáu", "Guinea Ecuatorial",
+    "Guyana", "Haití", "Honduras", "Islandia", "Islas Marshall", "Islas Salomón",
+    "Jamaica", "Jordania", "Kazajistán", "Kirguistán", "Kiribati", "Kuwait",
+    "Laos", "Lesoto", "Letonia", "Líbano", "Liberia", "Libia", "Liechtenstein",
+    "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malaui",
+    "Maldivas", "Malí", "Malta", "Mauricio", "Mauritania", "Micronesia",
+    "Moldavia", "Mónaco", "Mongolia", "Montenegro", "Mozambique", "Namibia",
+    "Nauru", "Nepal", "Nicaragua", "Níger", "Omán", "Pakistán", "Palaos",
+    "Panamá", "Papúa Nueva Guinea", "República Centroafricana", "República del Congo",
+    "República Democrática del Congo", "República Dominicana", "Ruanda", "Samoa",
+    "San Cristóbal y Nieves", "San Marino", "San Vicente y las Granadinas",
+    "Santa Lucía", "Santo Tomé y Príncipe", "Senegal", "Serbia", "Seychelles",
+    "Sierra Leona", "Siria", "Somalia", "Sri Lanka", "Suazilandia", "Sudán",
+    "Sudán del Sur", "Surinam", "Tanzania", "Tayikistán", "Timor Oriental",
+    "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Tuvalu",
+    "Ucrania", "Uganda", "Uzbekistán", "Vanuatu", "Yemen", "Yibuti", "Zambia", "Zimbabue"
   ]
 
   useEffect(() => {
@@ -234,7 +75,7 @@ el",
     }
   }, [posicionNcm])
 
-  useEffec{
+  useEffect(() => {
     const fobNum = parseFloat(fob) || 0
     const fleteNum = parseFloat(flete) || 0
     const seguroNum = parseFloat(seguro) || 0
@@ -266,7 +107,7 @@ el",
         <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
           Nueva Operación
         </h1>
-        <form onSubmit={handleSubit} className="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
+        <form onSubmit={handleSubmit} className="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Cliente</label>
@@ -286,7 +127,7 @@ el",
                 onChange={e => setTipo(e.target.value)}
                 className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
               >
-                <option>Importación</optio>
+                <option>Importación</option>
                 <option>Exportación</option>
               </select>
             </div>
@@ -313,7 +154,7 @@ el",
                 value={fob}
                 onChange={e => setFob(e.target.value)}
                 required
-                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outlineone"
+                className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"
               />
             </div>
             <div>
@@ -341,7 +182,7 @@ el",
             <input
               type="text"
               value={posicionNcm}
-              onChange={e => setosicionNcm(e.target.value)}
+              onChange={e => setPosicionNcm(e.target.value)}
               required
               className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg outline-none"
               placeholder="0000.00.00"
@@ -361,7 +202,7 @@ el",
                 </div>
               </div>
             )}
-        </div>
+          </div>
 
           <div>
             <label className="block text-xs text-slate-400">Base Imponible Estimada:</label>
