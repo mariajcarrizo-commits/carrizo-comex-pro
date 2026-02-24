@@ -82,8 +82,7 @@ export default function NuevaOperacion() {
     setBaseImponible(fobNum + fleteNum + seguroNum)
   }, [fob, flete, seguro])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {    e.preventDefault()
     setLoading(true)
     const { error } = await supabase.from('operaciones').insert({
       cliente,
