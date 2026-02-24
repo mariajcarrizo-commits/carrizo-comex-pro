@@ -1,57 +1,34 @@
-export const ncmDatabase = {
-  "8517.13.00": { 
-    descripcion: "Teléfonos inteligentes (Smartphones)", 
-    die: 16, 
-    te: 3, 
-    iva: 21, 
-    ivaAdicional: 20 
+export const ncmDatabase = [
+  {
+    posicion: "2715.00.00",
+    descripcion: "Mezclas bituminosas a base de asfalto natural o betún",
+    DIE: "0%",
+    tasa_estadistica: "3%"
   },
-  "8471.30.12": { 
-    descripcion: "Laptops / Unidades digitales portátiles", 
-    die: 0, 
-    te: 3, 
-    iva: 10.5, 
-    ivaAdicional: 10 
+  {
+    posicion: "3824.99.90",
+    descripcion: "Aditivos para cementos, hormigones o morteros",
+    DIE: "16%",
+    tasa_estadistica: "3%"
   },
-  "6403.99.90": { 
-    descripcion: "Calzado con suela de caucho y parte superior de cuero", 
-    die: 35, 
-    te: 3, 
-    iva: 21, 
-    ivaAdicional: 20 
+  {
+    posicion: "8517.13.00",
+    descripcion: "Teléfonos inteligentes (Smartphones)",
+    DIE: "16%",
+    tasa_estadistica: "3%"
+  },
+  {
+    posicion: "8471.30.12",
+    descripcion: "Laptops / Unidades digitales portátiles",
+    DIE: "0%",
+    tasa_estadistica: "3%"
+  },
+  {
+    posicion: "6403.99.90",
+    descripcion: "Calzado con suela de caucho y parte superior de cuero",
+    DIE: "35%",
+    tasa_estadistica: "3%"
   }
-};
-export const ncmDatabase = {
-  // Mezclas bituminosas (Asfalto en frío)
-  "2715.00.00": { 
-    descripcion: "Mezclas bituminosas a base de asfalto natural o betún", 
-    die: 10, 
-    te: 3, 
-    iva: 21, 
-    ivaAdicional: 20 
-  },
-  // Manufacturas de asfalto
-  "6807.10.00": { 
-    descripcion: "Manufacturas de asfalto en rollos (Membranas/Vialidad)", 
-    die: 14, 
-    te: 3, 
-    iva: 21, 
-    ivaAdicional: 20 
-  },
-  // Maquinaria vial (Terminadoras de asfalto)
-  "8479.10.00": { 
-    descripcion: "Maquinaria para obras públicas, la construcción o trabajos análogos", 
-    die: 2, 
-    te: 3, 
-    iva: 10.5, 
-    ivaAdicional: 10 
-  },
-  // Aditivos químicos para asfalto
-  "3824.99.99": { 
-    descripcion: "Preparaciones aglutinantes para moldes o núcleos de fundición; aditivos", 
-    die: 12, 
-    te: 3, 
-    iva: 21, 
-    ivaAdicional: 20 
-  }
-};
+]
+
+export default ncmDatabase
