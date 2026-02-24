@@ -67,7 +67,7 @@ export default function NuevaOperacion() {
     if (found) {
       setNcmInfo({
         descripcion: found.descripcion,
-        DIE: found.DIE || found.die || '-',
+        DIE: found.DIE || '-',
         tasa_estadistica: found.tasa_estadistica != null ? String(found.tasa_estadistica) : '-'
       })
     } else {
