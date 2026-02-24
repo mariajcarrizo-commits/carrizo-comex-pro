@@ -15,7 +15,7 @@ export default function NuevaOperacion() {
   const [seguro, setSeguro] = useState('')
   const [posicionNcm, setPosicionNcm] = useState('')
   const [loading, setLoading] = useState(false)
-  const [ncmInfo, setNcmInfo] = useState(null)
+  const [ncmInfo, setNcmInfo] = useState<any>(null)
   const [baseImponible, setBaseImponible] = useState(0)
   const router = useRouter()
 
