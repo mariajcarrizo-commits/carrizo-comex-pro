@@ -1,5 +1,8 @@
 'use client'
 
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+
 import Image from 'next/image'
 
 export default function Navbar() {
@@ -24,9 +27,7 @@ export default function Navbar() {
                 CARRIZO <span className="text-purple-400 font-light">Comex</span>
               </span>
             </div>
-            import { supabase } from '@/lib/supabase'
-            import { useRouter } from 'next/navigation'
-
+ 
 
             {/* PERFIL (Visible solo en Móvil aquí a la derecha) */}
             <div className="md:hidden flex items-center gap-2">
