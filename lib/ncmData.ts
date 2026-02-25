@@ -1,34 +1,36 @@
-export const ncmDatabase = [
-  {
-    posicion: "2715.00.00",
-    descripcion: "Mezclas bituminosas a base de asfalto natural o betún",
-    DIE: "0%",
-    tasa_estadistica: "3%"
-  },
-  {
-    posicion: "3824.99.90",
-    descripcion: "Aditivos para cementos, hormigones o morteros",
-    DIE: "16%",
-    tasa_estadistica: "3%"
-  },
-  {
-    posicion: "8517.13.00",
-    descripcion: "Teléfonos inteligentes (Smartphones)",
-    DIE: "16%",
-    tasa_estadistica: "3%"
-  },
-  {
-    posicion: "8471.30.12",
-    descripcion: "Laptops / Unidades digitales portátiles",
-    DIE: "0%",
-    tasa_estadistica: "3%"
-  },
-  {
-    posicion: "6403.99.90",
-    descripcion: "Calzado con suela de caucho y parte superior de cuero",
-    DIE: "35%",
-    tasa_estadistica: "3%"
-  }
-]
+export interface NCM {
+  codigo: string;
+  descripcion: string;
+  di: string;
+  iva: string;
+  te: string;
+  licencia: string;
+  intervenciones?: string[];
+}
 
-export default ncmDatabase
+export const ncmComunes: NCM[] = [
+  {
+    codigo: "8471.30.12",
+    descripcion: "Tabletas (Tablets) de peso inferior a 1 kg",
+    di: "0%", iva: "10.5%", te: "3%", licencia: "LA",
+    intervenciones: ["Seguridad Eléctrica"]
+  },
+  {
+    codigo: "8471.30.19",
+    descripcion: "Las demás máquinas automáticas para procesamiento de datos, portátiles",
+    di: "0%", iva: "10.5%", te: "3%", licencia: "LNA",
+    intervenciones: ["Seguridad Eléctrica"]
+  },
+  {
+    codigo: "8517.13.00",
+    descripcion: "Teléfonos inteligentes (Smartphones)",
+    di: "16%", iva: "21%", te: "3%", licencia: "LNA",
+    intervenciones: ["ENACOM", "Seguridad Eléctrica"]
+  },
+  {
+    codigo: "3824.99.90",
+    descripcion: "Productos químicos y preparaciones de la industria química (Aditivos)",
+    di: "14%", iva: "21%", te: "3%", licencia: "LA",
+    intervenciones: ["SEDRONAR", "ANMAT"]
+  }
+];
