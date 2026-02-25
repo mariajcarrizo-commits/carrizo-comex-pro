@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Navbar from '../../components/Navbar'
-import { ncmComunes } from '../../data/ncm'
+import ncmDatabase from '@/lib/ncmData'
 
 // LISTA COMPLETA DE PAÍSES (Se ordena alfabéticamente más abajo)
 const paisesMundo = [
