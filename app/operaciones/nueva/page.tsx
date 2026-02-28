@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Navbar from '../../components/Navbar'
 import { ncmComunes } from '@/lib/ncmData'
+import { supabase } from '../../../lib/supabase'
 
 // LISTA COMPLETA DE PAÍSES (Se ordena alfabéticamente más abajo)
 const paisesMundo = [
@@ -58,26 +59,34 @@ export default function NuevaOperacion() {
   const siguientePaso = () => { if (paso < 4) setPaso(paso + 1) }
   const anteriorPaso = () => { if (paso > 1) setPaso(paso - 1) }
 
-  const guardarOperacion = () => {
-    const guardadas = localStorage.getItem('operaciones')
-    const operaciones = guardadas ? JSON.parse(guardadas) : []
-    
-    const riesgo = formData.esPeligroso === 'Si' ? { riesgo: 'ALTO', score: 85, alertas: [{msg: 'Carga Peligrosa'}] } : { riesgo: 'BAJO', score: 10, alertas: [] }
-
+  const guardarOperacion = async () => {
+    // 1. Preparamos el "paquete" con los nombres exactos de los cajones de la base de datos
     const nuevaOperacion = {
-      id: Date.now(),
+      tipo: formData.tipo,
       cliente: formData.clienteNombre,
       cuit: formData.clienteCuit,
-      tipo: formData.tipo,
-      pais: formData.pais,
       producto: formData.productoDescripcion,
-      ncm: formData.ncm,
-      estado: "Pendiente",
-      fecha: new Date().toLocaleDateString(),
-      riesgo: riesgo,
-      checklist: [{tarea: 'Confirmar Pedido', completado: false, etapa: 'Inicio'}, {tarea: 'Clasificar NCM', completado: true, etapa: 'Inicio'}],
-      datosExtra: { esPeligroso: formData.esPeligroso }
+      pais: formData.pais,
+      posicion_ncm: formData.ncm,
+      es_peligroso: formData.esPeligroso,
+      fob: parseFloat(formData.fobEstimado) || 0,
+      estado: 'Pendiente'
     }
+
+    // 2. Disparamos los datos hacia la bóveda en la nube
+    const { error } = await supabase
+      .from('operaciones')
+      .insert([nuevaOperacion])
+
+    // 3. Verificamos si hubo algún problema o si fue exitoso
+    if (error) {
+      alert("Hubo un error al guardar en la nube: " + error.message)
+      console.error("Error completo:", error)
+    } else {
+      // Éxito total: redirigimos al listado
+      window.location.href = '/operaciones'
+    }
+  }
     
     operaciones.unshift(nuevaOperacion)
     localStorage.setItem('operaciones', JSON.stringify(operaciones))
