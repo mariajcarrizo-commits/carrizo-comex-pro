@@ -87,11 +87,6 @@ export default function NuevaOperacion() {
       window.location.href = '/operaciones'
     }
   }
-    
-    operaciones.unshift(nuevaOperacion)
-    localStorage.setItem('operaciones', JSON.stringify(operaciones))
-    window.location.href = '/operaciones'
-  }
 
   return (
     <>
