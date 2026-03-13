@@ -1,81 +1,102 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import Navbar from '../components/Navbar'
-import { supabase } from '@/lib/supabase'
+// Importamos la llave maestra
+import { supabase } from '../../lib/supabase'
 
-export default function ListaOperaciones() {
-  const [operaciones, setOperaciones] = useState([])
-  const [loading, setLoading] = useState(true)
+export default function Operaciones() {
+  const [operaciones, setOperaciones] = useState<any[]>([])
+  const [cargando, setCargando] = useState(true)
 
+  // Esta función va a buscar los datos a Supabase apenas entrás a la página
   useEffect(() => {
-    fetchOperaciones()
+    const cargarOperaciones = async () => {
+      const { data, error } = await supabase
+        .from('operaciones')
+        .select('*')
+        .order('created_at', { ascending: false }) // Las más nuevas primero
+
+      if (error) {
+        console.error('Error cargando operaciones:', error)
+      } else {
+        setOperaciones(data || [])
+      }
+      setCargando(false)
+    }
+
+    cargarOperaciones()
   }, [])
 
-  async function fetchOperaciones() {
-    const { data, error } = await supabase
-      .from('operaciones')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    if (!error && data) setOperaciones(data)
-    setLoading(false)
-  }
-
-  const handleDelete = async (id: any) => {
-    if (confirm('¿Estás segura de eliminar esta operación?')) {
-      const { error } = await supabase.from('operaciones').delete().eq('id', id)
-      if (!error) setOperaciones(operaciones.filter((op: any) => op.id !== id))
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
+    <div className="min-h-screen bg-slate-50">
       <Navbar />
-      <div className="p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Operaciones</h1>
-                <p className="text-slate-400">Gestiona tus despachos aduaneros en la nube</p>
-            </div>
-            <a href="/operaciones/nueva" className="w-full md:w-auto bg-purple-600 text-white px-6 py-3 rounded-lg font-bold text-center shadow-lg hover:bg-purple-700 transition-all">
-                + Nueva Operación
-            </a>
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Operaciones</h1>
+            <p className="text-slate-600">Gestión de despachos activos</p>
           </div>
-
-          {loading ? (
-            <p className="text-center py-10 text-slate-400">Cargando datos de Supabase...</p>
-          ) : operaciones.length === 0 ? (
-            <div className="text-center py-12 bg-slate-800 rounded-xl border border-dashed border-slate-700">
-                <p className="text-4xl mb-2">📭</p>
-                <p className="text-slate-400 font-bold">No hay operaciones guardadas aún</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {operaciones.map((op: any) => (
-                <div key={op.id} className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center gap-4 w-full">
-                    <div className={`w-2 h-12 rounded-full ${op.tipo === 'Importación' ? 'bg-blue-500' : 'bg-green-500'}`} />
-                    <div>
-                      <h3 className="font-bold text-lg">{op.cliente}</h3>
-                      <p className="text-sm text-slate-400">{op.pais} • {op.tipo} • NCM: {op.posicion_ncm}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 w-full md:w-auto">
-                    <a href={`/operaciones/${op.id}`} className="flex-1 text-center bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded font-bold text-sm transition-colors">
-                      Gestionar
-                    </a>
-                    <button onClick={() => handleDelete(op.id)} className="px-4 py-2 rounded bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white font-bold text-sm transition-all">
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <Link href="/operaciones/nueva" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-bold transition-all shadow-md">
+            + Nueva Operación
+          </Link>
         </div>
+
+        {cargando ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>
+        ) : operaciones.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+            <div className="text-6xl mb-4">📭</div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">No hay operaciones todavía</h3>
+            <p className="text-slate-500 mb-6">Comenzá creando tu primer despacho en el sistema.</p>
+            <Link href="/operaciones/nueva" className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-lg font-bold transition-all">
+              Crear Operación
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-slate-700">
+                    <th className="p-4 font-bold text-sm">Fecha</th>
+                    <th className="p-4 font-bold text-sm">Cliente</th>
+                    <th className="p-4 font-bold text-sm">Tipo</th>
+                    <th className="p-4 font-bold text-sm">Mercadería</th>
+                    <th className="p-4 font-bold text-sm">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {operaciones.map((op) => (
+                    <tr key={op.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-sm text-slate-600">
+                        {/* Formateamos la fecha al estilo argentino */}
+                        {new Date(op.created_at).toLocaleDateString('es-AR')}
+                      </td>
+                      <td className="p-4 font-bold text-slate-900">{op.cliente}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          op.tipo === 'Importación' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {op.tipo}
+                        </span>
+                      </td>
+                      <td className="p-4 text-sm text-slate-600 truncate max-w-xs">{op.producto}</td>
+                      <td className="p-4">
+                         <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                           {op.estado || 'Pendiente'}
+                         </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
