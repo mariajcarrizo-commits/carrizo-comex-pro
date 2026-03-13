@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Navbar from '../components/Navbar'
 // Importamos la llave maestra
 import { supabase } from '../../lib/supabase'
 
