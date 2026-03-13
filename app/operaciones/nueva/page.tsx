@@ -59,36 +59,40 @@ export default function NuevaOperacion() {
   const siguientePaso = () => { if (paso < 4) setPaso(paso + 1) }
   const anteriorPaso = () => { if (paso > 1) setPaso(paso - 1) }
 
-  // EL CEREBRO DE NUESTRA IA MÁGICA 🤖
-  const sugerirNcmConIA = () => {
-    setIaCargando(true)
+// EL CEREBRO DE NUESTRA IA MÁGICA 🤖 (CONECTADO A LA NUBE REAL)
+const sugerirNcmConIA = async () => {
+  setIaCargando(true)
 
-    // Simulamos el tiempo de procesamiento de una IA real (2 segundos)
-    setTimeout(() => {
-      const descripcion = formData.productoDescripcion.toLowerCase()
-      let coincidencia = ncmComunes[0] // Por defecto
+  try {
+    // 1. Llamamos a la sala de máquinas que creaste (nuestro túnel seguro)
+    const respuesta = await fetch('/api/clasificar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ descripcion: formData.productoDescripcion })
+    })
 
-      // Lógica de motor de búsqueda inteligente
-      if (descripcion.includes('quimic') || descripcion.includes('aditiv')) {
-        coincidencia = ncmComunes.find(n => n.codigo.startsWith('3824')) || ncmComunes[0]
-      } else if (descripcion.includes('plastic') || descripcion.includes('polimer')) {
-        coincidencia = ncmComunes.find(n => n.codigo.startsWith('39')) || ncmComunes[0]
-      } else if (descripcion.includes('maquina') || descripcion.includes('motor')) {
-        coincidencia = ncmComunes.find(n => n.codigo.startsWith('84')) || ncmComunes[0]
-      } else {
-        const palabras = descripcion.split(' ').filter(p => p.length > 3)
-        const encontrada = ncmComunes.find(ncm => 
-          palabras.some(p => ncm.descripcion.toLowerCase().includes(p))
-        )
-        if (encontrada) coincidencia = encontrada
-      }
+    if (!respuesta.ok) throw new Error('Fallo en la conexión con la IA')
 
-      setFormData({ ...formData, ncm: coincidencia.codigo })
-      setBusquedaNcm(coincidencia.descripcion)
-      setMostrarSelectorNcm(true)
-      setIaCargando(false)
-    }, 2000)
+    // 2. Recibimos la respuesta de Gemini (Ej: "8517.12.31 - Teléfonos inteligentes")
+    const data = await respuesta.json()
+    const sugerenciaIA = data.sugerencia || ''
+    
+    // 3. Extraemos el código limpio para guardarlo en la base de datos
+    const partes = sugerenciaIA.split(' - ')
+    const codigoSugerido = partes[0] || sugerenciaIA
+
+    // 4. Actualizamos la pantalla con la magia
+    setFormData({ ...formData, ncm: codigoSugerido })
+    setBusquedaNcm(`✨ IA Sugiere: ${sugerenciaIA}`)
+    setMostrarSelectorNcm(true)
+
+  } catch (error) {
+    console.error("Error en la IA:", error)
+    alert("Hubo un cortocircuito al contactar a la IA. Revisá tu conexión.")
+  } finally {
+    setIaCargando(false)
   }
+}
 
   const guardarOperacion = async () => {
     const nuevaOperacion = {
