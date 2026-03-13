@@ -85,7 +85,7 @@ const sugerirNcmConIA = async () => {
     setFormData({ ...formData, ncm: codigoSugerido })
     setBusquedaNcm(`✨ IA Sugiere: ${sugerenciaIA}`)
     setMostrarSelectorNcm(true)
-    
+
 
   } catch (error) {
     console.error("Error en la IA:", error)
@@ -289,3 +289,4 @@ const sugerirNcmConIA = async () => {
     </div>
   )
 }
+// Reactivando Vercel a la fuerza
