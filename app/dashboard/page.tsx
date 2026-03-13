@@ -1,170 +1,176 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-
-interface Operacion {
-  id: number;
-  cliente: string;
-  fob: number;
-  estado: string;
-}
+import Link from 'next/link'
+import { supabase } from '../../lib/supabase'
 
 export default function Dashboard() {
-  const [operaciones, setOperaciones] = useState<Operacion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [metricas, setMetricas] = useState({
+    total: 0,
+    fobTotal: 0,
+    pendientes: 0,
+    importaciones: 0,
+    exportaciones: 0
+  })
+  const [operacionesRecientes, setOperacionesRecientes] = useState<any[]>([])
+  const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
-    const fetchOperaciones = async () => {
-      setLoading(true);
+    const cargarDatos = async () => {
+      // Traemos todas las operaciones de la bóveda
       const { data, error } = await supabase
         .from('operaciones')
-        .select('id,cliente,fob,estado');
-      if (!error && data) setOperaciones(data);
-      setLoading(false);
-    };
-    fetchOperaciones();
-  }, []);
+        .select('*')
+        .order('created_at', { ascending: false })
 
-  const totalOperaciones = operaciones.length;
-  const totalFob = operaciones.reduce((acc, op) => acc + (op.fob || 0), 0);
+      if (error) {
+        console.error('Error cargando el dashboard:', error)
+      } else if (data) {
+        // La matemática mágica para los gráficos
+        const fobSum = data.reduce((acc, op) => acc + (Number(op.fob) || 0), 0)
+        const pend = data.filter(op => op.estado === 'Pendiente').length
+        const impos = data.filter(op => op.tipo === 'Importación').length
+        const expos = data.filter(op => op.tipo === 'Exportación').length
 
-  const handleDelete = async (id: number) => {
-    setDeletingId(id);
-    const { error } = await supabase.from('operaciones').delete().eq('id', id);
-    if (!error) {
-      setOperaciones(ops => ops.filter(op => op.id !== id));
+        setMetricas({
+          total: data.length,
+          fobTotal: fobSum,
+          pendientes: pend,
+          importaciones: impos,
+          exportaciones: expos
+        })
+
+        // Guardamos solo las últimas 5 para la tablita de actividad reciente
+        setOperacionesRecientes(data.slice(0, 5))
+      }
+      setCargando(false)
     }
-    setDeletingId(null);
-  };
+
+    cargarDatos()
+  }, [])
+
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-slate-900 py-10 px-4 md:px-10">
-      <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-        Dashboard
-      </h1>
-      <p className="text-slate-400 mb-8">Resumen de operaciones aduaneras</p>
-
-      {/* Tarjetas resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mb-10">
-        <div className="bg-slate-800 rounded-xl shadow p-6 border-l-4 border-purple-400 flex items-center">
-          <div className="flex-1">
-            <span className="uppercase text-xs font-bold text-slate-400">Total de Operaciones</span>
-            <div className="text-3xl font-extrabold text-white mt-2">{loading ? '...' : totalOperaciones}</div>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+            <p className="text-slate-600">Resumen general de tu operatoria en tiempo real</p>
           </div>
-          <div className="ml-4 bg-purple-400/20 rounded-full h-12 w-12 flex items-center justify-center text-purple-400">
-            <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-              <path d="M4 7c0-1.6569 1.3431-3 3-3h10c1.6569 0 3 1.3431 3 3v10c0 1.6569-1.3431 3-3 3H7c-1.6569 0-3-1.3431-3-3V7z"/>
-            </svg>
-          </div>
+          <Link href="/operaciones/nueva" className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-bold transition-all shadow-md text-center">
+            + Nueva Operación
+          </Link>
         </div>
-        <div className="bg-slate-800 rounded-xl shadow p-6 border-l-4 border-purple-400 flex items-center">
-          <div className="flex-1">
-            <span className="uppercase text-xs font-bold text-slate-400">FOB Acumulado</span>
-            <div className="text-3xl font-extrabold text-white mt-2">
-              {loading ? '...' : totalFob.toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })}
+
+        {/* TARJETAS DE MÉTRICAS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500 hover:shadow-md transition-all">
+            <p className="text-sm font-bold text-slate-500 mb-1">Total Operaciones</p>
+            <div className="flex items-end gap-2">
+              <h2 className="text-4xl font-extrabold text-slate-900">{metricas.total}</h2>
+              <span className="text-sm text-green-500 font-bold mb-1">+100%</span>
             </div>
           </div>
-          <div className="ml-4 bg-purple-400/20 rounded-full h-12 w-12 flex items-center justify-center text-purple-400">
-            <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-              <path d="M12 8c-2.21 0-4 1.343-4 3s1.79 3 4 3 4-1.343 4-3-1.79-3-4-3z"/>
-              <path d="M12 2v2"/>
-              <path d="M12 20v2"/>
-              <path d="M20 12h2"/>
-              <path d="M2 12H4"/>
-            </svg>
-          </div>
-        </div>
-      </div>
 
-      {/* Tabla de operaciones */}
-      <div className="bg-slate-800 rounded-xl shadow overflow-hidden border border-slate-700 max-w-4xl mx-auto">
-        <div className="bg-slate-700 px-6 py-4 flex items-center justify-between">
-          <span className="font-bold text-white text-sm uppercase tracking-wider">Operaciones</span>
-          <span className="text-xs text-purple-400 font-semibold">{totalOperaciones} registros</span>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500 hover:shadow-md transition-all">
+            <p className="text-sm font-bold text-slate-500 mb-1">Volumen FOB Declarado</p>
+            <div className="flex items-end gap-2">
+              <h2 className="text-3xl font-extrabold text-slate-900">
+                U$S {metricas.fobTotal.toLocaleString('es-AR')}
+              </h2>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 hover:shadow-md transition-all">
+            <p className="text-sm font-bold text-slate-500 mb-1">Despachos Pendientes</p>
+            <div className="flex items-end gap-2">
+              <h2 className="text-4xl font-extrabold text-slate-900">{metricas.pendientes}</h2>
+              <span className="text-sm text-orange-500 font-bold mb-1">En curso</span>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-green-500 hover:shadow-md transition-all">
+            <p className="text-sm font-bold text-slate-500 mb-1">Distribución</p>
+            <div className="flex flex-col mt-1">
+              <div className="flex justify-between text-sm font-bold text-slate-700">
+                <span>Impos: {metricas.importaciones}</span>
+                <span>Expos: {metricas.exportaciones}</span>
+              </div>
+              {/* Barrita de progreso visual */}
+              <div className="w-full h-2 bg-slate-100 rounded-full mt-2 overflow-hidden flex">
+                <div 
+                  className="h-full bg-blue-500" 
+                  style={{ width: `${metricas.total > 0 ? (metricas.importaciones / metricas.total) * 100 : 50}%` }}
+                ></div>
+                <div 
+                  className="h-full bg-orange-500" 
+                  style={{ width: `${metricas.total > 0 ? (metricas.exportaciones / metricas.total) * 100 : 50}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left">
-            <thead className="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
-              <tr>
-                <th className="p-4 font-bold">Cliente</th>
-                <th className="p-4 font-bold">FOB</th>
-                <th className="p-4 font-bold">Estado</th>
-                <th className="p-4 font-bold text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700 text-sm">
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-slate-400">Cargando...</td>
-                </tr>
-              ) : operaciones.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-6 text-center text-slate-500">No hay operaciones registradas.</td>
-                </tr>
-              ) : (
-                operaciones.map((op) => (
-                  <tr key={op.id} className="hover:bg-slate-900/60 transition-colors">
-                    <td className="p-4 font-medium text-white">{op.cliente}</td>
-                    <td className="p-4 text-purple-400 font-mono">
-                      {typeof op.fob === 'number'
-                        ? op.fob.toLocaleString('es-AR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 })
-                        : '-'}
-                    </td>
-                    <td className="p-4">
-                      <span className={
-                        `px-3 py-1 rounded-full text-xs font-bold border 
-                        ${
-                          op.estado === 'Completado'
-                            ? 'bg-green-100/10 text-green-400 border-green-400'
-                            : op.estado === 'Pendiente'
-                            ? 'bg-yellow-100/10 text-yellow-300 border-yellow-300'
-                            : 'bg-slate-100/10 text-slate-300 border-slate-600'
-                        }`
-                      }>
-                        {op.estado}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleDelete(op.id)}
-                        disabled={deletingId === op.id}
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-md 
-                          font-medium text-xs transition bg-slate-800 hover:bg-slate-900
-                          ${
-                            deletingId === op.id
-                              ? 'text-red-300 cursor-not-allowed opacity-60'
-                              : 'text-red-400'
-                          }
-                        `}
-                        title="Eliminar operación"
-                      >
-                        {/* Trash icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h10"
-                          />
-                        </svg>
-                        {deletingId === op.id ? 'Eliminando...' : 'Eliminar'}
-                      </button>
-                    </td>
+
+        {/* ACTIVIDAD RECIENTE */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h3 className="text-lg font-bold text-slate-800">Actividad Reciente</h3>
+            <Link href="/operaciones" className="text-sm font-bold text-purple-600 hover:text-purple-800">Ver todas →</Link>
+          </div>
+          
+          {operacionesRecientes.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              Aún no hay operaciones registradas para mostrar.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-600 text-sm">
+                    <th className="p-4 font-bold">Cliente</th>
+                    <th className="p-4 font-bold">Operación</th>
+                    <th className="p-4 font-bold">FOB</th>
+                    <th className="p-4 font-bold">Estado</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {operacionesRecientes.map((op) => (
+                    <tr key={op.id} className="border-t border-slate-100 hover:bg-slate-50">
+                      <td className="p-4 font-bold text-slate-900">{op.cliente}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                          op.tipo === 'Importación' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {op.tipo}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-700 font-mono text-sm">U$S {Number(op.fob).toLocaleString('es-AR')}</td>
+                      <td className="p-4">
+                        <span className="flex items-center gap-1 text-xs font-bold text-orange-600">
+                          <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                          {op.estado}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
+
       </div>
     </div>
-  );
+  )
 }
