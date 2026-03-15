@@ -8,8 +8,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { descripcion } = body;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `
     Eres un Despachante de Aduanas Senior en Argentina, experto en Nomenclatura Común del Mercosur (NCM).
     Tu tarea es clasificar la siguiente mercadería y devolver ÚNICAMENTE la Posición Arancelaria NCM más probable de 8 dígitos, separada por puntos (ejemplo: 8517.12.31), seguida de un guión y una breve descripción oficial de máximo 5 palabras.
