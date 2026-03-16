@@ -30,18 +30,43 @@ export default function NuevaOperacion() {
     ncm: '',
     esPeligroso: 'No',
     primerDespacho: 'No',
-    fobEstimado: ''
+    fobEstimado: '',
+    // NUEVOS CAMPOS - PASO 5 (Logística)
+    domicilio: '',
+    cbu: '',
+    pesoNeto: '',
+    pesoBruto: '',
+    // NUEVOS CAMPOS - PASO 5 (Checklist de Documentos)
+    docs: {
+      afip: false,
+      malvina: false,
+      factura: false,
+      packing: false,
+      origen: false,
+      tecnicas: false,
+      transporte: false
+    }
   })
 
   const [busquedaNcm, setBusquedaNcm] = useState('')
   const [mostrarSelectorNcm, setMostrarSelectorNcm] = useState(false)
-  // ESTADO NUEVO: Para saber si la IA está "pensando"
   const [iaCargando, setIaCargando] = useState(false)
 
   const handleChange = (e: any) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
+    })
+  }
+
+  // Función especial para manejar el Checklist de documentos
+  const handleDocChange = (docName: string) => {
+    setFormData({
+      ...formData,
+      docs: {
+        ...formData.docs,
+        [docName]: !formData.docs[docName as keyof typeof formData.docs]
+      }
     })
   }
 
@@ -56,46 +81,43 @@ export default function NuevaOperacion() {
     item.descripcion.toLowerCase().includes(busquedaNcm.toLowerCase())
   )
 
-  const siguientePaso = () => { if (paso < 4) setPaso(paso + 1) }
+  // Actualizamos el límite a 5 pasos
+  const siguientePaso = () => { if (paso < 5) setPaso(paso + 1) }
   const anteriorPaso = () => { if (paso > 1) setPaso(paso - 1) }
 
-// EL CEREBRO DE NUESTRA IA MÁGICA 🤖 (CONECTADO A LA NUBE REAL)
-const sugerirNcmConIA = async () => {
-  setIaCargando(true)
+  // EL CEREBRO DE NUESTRA IA MÁGICA 🤖
+  const sugerirNcmConIA = async () => {
+    setIaCargando(true)
 
-  try {
-    // 1. Llamamos a la sala de máquinas que creaste (nuestro túnel seguro)
-    const respuesta = await fetch('/api/clasificar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ descripcion: formData.productoDescripcion })
-    })
+    try {
+      const respuesta = await fetch('/api/clasificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ descripcion: formData.productoDescripcion })
+      })
 
-    if (!respuesta.ok) throw new Error('Fallo en la conexión con la IA')
+      if (!respuesta.ok) throw new Error('Fallo en la conexión con la IA')
 
-    // 2. Recibimos la respuesta de Gemini (Ej: "8517.12.31 - Teléfonos inteligentes")
-    const data = await respuesta.json()
-    const sugerenciaIA = data.sugerencia || ''
-    
-    // 3. Extraemos el código limpio para guardarlo en la base de datos
-    const partes = sugerenciaIA.split(' - ')
-    const codigoSugerido = partes[0] || sugerenciaIA
+      const data = await respuesta.json()
+      const sugerenciaIA = data.sugerencia || ''
+      
+      const partes = sugerenciaIA.split(' - ')
+      const codigoSugerido = partes[0] || sugerenciaIA
 
-    // 4. Actualizamos la pantalla con la magia
-    setFormData({ ...formData, ncm: codigoSugerido })
-    setBusquedaNcm(`✨ IA Sugiere: ${sugerenciaIA}`)
-    setMostrarSelectorNcm(true)
-
-
-  } catch (error) {
-    console.error("Error en la IA:", error)
-    alert("Hubo un cortocircuito al contactar a la IA. Revisá tu conexión.")
-  } finally {
-    setIaCargando(false)
+      setFormData({ ...formData, ncm: codigoSugerido })
+      setBusquedaNcm(`✨ IA Sugiere: ${sugerenciaIA}`)
+      setMostrarSelectorNcm(true)
+      
+    } catch (error) {
+      console.error("Error en la IA:", error)
+      alert("Hubo un cortocircuito al contactar a la IA. Revisá tu conexión.")
+    } finally {
+      setIaCargando(false)
+    }
   }
-}
 
   const guardarOperacion = async () => {
+    // Armamos el paquete completo con los datos originales + los nuevos
     const nuevaOperacion = {
       tipo: formData.tipo,
       cliente: formData.clienteNombre,
@@ -105,7 +127,20 @@ const sugerirNcmConIA = async () => {
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
       fob: parseFloat(formData.fobEstimado) || 0,
-      estado: 'Pendiente'
+      estado: 'Pendiente',
+      // 👇 ACÁ ESTÁN LOS NUEVOS DATOS DE LOGÍSTICA 👇
+      domicilio: formData.domicilio,
+      cbu: formData.cbu,
+      peso_neto: parseFloat(formData.pesoNeto) || 0,
+      peso_bruto: parseFloat(formData.pesoBruto) || 0,
+      // 👇 ACÁ ESTÁN LOS TILDES DEL CHECKLIST 👇
+      docs_afip: formData.docs.afip,
+      docs_malvina: formData.docs.malvina,
+      docs_factura: formData.docs.factura,
+      docs_packing: formData.docs.packing,
+      docs_origen: formData.docs.origen,
+      docs_tecnicas: formData.docs.tecnicas,
+      docs_transporte: formData.docs.transporte
     }
 
     const { error } = await supabase.from('operaciones').insert([nuevaOperacion])
@@ -126,15 +161,16 @@ const sugerirNcmConIA = async () => {
           <p className="text-slate-600 font-medium">Completá los datos paso a paso</p>
         </div>
 
+        {/* BARRA DE PROGRESO ACTUALIZADA A 5 PASOS */}
         <div className="flex justify-between mb-8 px-2">
-          {[1, 2, 3, 4].map((num) => (
-            <div key={num} className="flex items-center flex-1">
+          {[1, 2, 3, 4, 5].map((num) => (
+            <div key={num} className="flex items-center flex-1 last:flex-none">
               <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-bold border-2 text-sm md:text-base ${
                 paso >= num ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-300'
               }`}>
                 {num}
               </div>
-              {num < 4 && (
+              {num < 5 && (
                 <div className={`flex-1 h-1 mx-1 md:mx-2 ${paso > num ? 'bg-slate-900' : 'bg-slate-300'}`} />
               )}
             </div>
@@ -269,18 +305,86 @@ const sugerirNcmConIA = async () => {
             </div>
           )}
 
+          {/* NUEVO PASO 5: DOCUMENTACIÓN Y LOGÍSTICA */}
+          {paso === 5 && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>
+              
+              <div className="space-y-6">
+                
+                {/* Datos Duros */}
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                  <h3 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Datos Operativos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Domicilio Fiscal / Operativo</label>
+                      <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">CBU (Para reintegros)</label>
+                      <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Peso Neto (kg)</label>
+                      <input type="number" name="pesoNeto" value={formData.pesoNeto} onChange={handleChange} placeholder="0.00" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Peso Bruto (kg)</label>
+                      <input type="number" name="pesoBruto" value={formData.pesoBruto} onChange={handleChange} placeholder="0.00" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Checklist de Documentos */}
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-800 mb-3 uppercase tracking-wider">Checklist Documental</h3>
+                  <p className="text-xs text-slate-500 mb-4">Marcá los documentos que el cliente ya te entregó o gestionaste.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Items del Checklist */}
+                    {[
+                      { id: 'afip', label: 'Constancia AFIP/ARCA' },
+                      { id: 'malvina', label: 'Alta Sistema Malvina' },
+                      { id: 'factura', label: 'Factura Comercial (USD)' },
+                      { id: 'packing', label: 'Packing List' },
+                      { id: 'origen', label: 'Certificado de Origen' },
+                      { id: 'tecnicas', label: 'Certificaciones Técnicas' },
+                      { id: 'transporte', label: 'Carta Porte / CRT' },
+                    ].map((doc) => (
+                      <label key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${formData.docs[doc.id as keyof typeof formData.docs] ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                        <div className={`w-5 h-5 rounded flex items-center justify-center border ${formData.docs[doc.id as keyof typeof formData.docs] ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>
+                           {formData.docs[doc.id as keyof typeof formData.docs] && <span className="text-white text-xs">✓</span>}
+                        </div>
+                        <input 
+                          type="checkbox" 
+                          className="hidden" 
+                          checked={formData.docs[doc.id as keyof typeof formData.docs]}
+                          onChange={() => handleDocChange(doc.id)} 
+                        />
+                        <span className={`text-sm font-bold ${formData.docs[doc.id as keyof typeof formData.docs] ? 'text-green-800' : 'text-slate-700'}`}>
+                          {doc.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
             {paso > 1 ? (
               <button onClick={anteriorPaso} className="px-6 py-3 text-slate-500 font-bold hover:text-slate-800">← Atrás</button>
             ) : <div></div>}
 
-            {paso < 4 ? (
+            {paso < 5 ? (
               <button onClick={siguientePaso} disabled={(paso === 1 && !formData.tipo)} className="px-8 py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 disabled:opacity-50 shadow-lg">
                 Siguiente →
               </button>
             ) : (
               <button onClick={guardarOperacion} disabled={!formData.ncm} className="px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 shadow-lg">
-                ✓ Finalizar
+                ✓ Finalizar Operación
               </button>
             )}
           </div>
@@ -289,4 +393,3 @@ const sugerirNcmConIA = async () => {
     </div>
   )
 }
-// Reactivando Vercel a la fuerza
