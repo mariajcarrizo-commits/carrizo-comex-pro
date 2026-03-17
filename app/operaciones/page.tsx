@@ -119,16 +119,14 @@ export default function Operaciones() {
     doc.setFontSize(12)
     doc.setTextColor(30, 41, 59)
     doc.text('Estado de Documentación Logística:', 14, alturaActual)
-
-    // Función para obtener texto y estilo de estado
-    const getEstadoData = (estado: boolean) => {
-      if (estado) {
-        return { content: 'Presentado', styles: { fillColor: [220, 252, 231], textColor: [22, 101, 52] } }; // Verde claro/oscuro
-      } else {
-        return { content: 'Pendiente', styles: { fillColor: [254, 243, 199], textColor: [146, 64, 14] } }; // Amarillo claro/marrón
-      }
-    };
-
+// Función para obtener texto y estilo de estado
+const getEstadoData = (estado: boolean): any => {
+  if (estado) {
+    return { content: 'Presentado', styles: { fillColor: [220, 252, 231], textColor: [22, 101, 52] } }; 
+  } else {
+    return { content: 'Pendiente', styles: { fillColor: [254, 243, 199], textColor: [146, 64, 14] } }; 
+  }
+};
     autoTable(doc, {
       startY: alturaActual + 6,
       theme: 'grid',
