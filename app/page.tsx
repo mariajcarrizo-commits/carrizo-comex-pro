@@ -1,82 +1,105 @@
-'use client'
+import Link from 'next/link'
 
-import { useState } from 'react'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-
-export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [cargando, setCargando] = useState(false)
-  const router = useRouter()
-
-  const handleLogin = (e: any) => {
-    e.preventDefault()
-    setCargando(true)
-    
-    // Simulación de conexión a base de datos (Supabase)
-    setTimeout(() => {
-      // Si el login es exitoso, te manda al Dashboard
-      router.push('/dashboard')
-    }, 1500)
-  }
-
+export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-4">
-      {/* Círculos decorativos de fondo para darle toque Tech */}
-      <div className="absolute top-0 left-0 w-64 h-64 bg-purple-600 rounded-full blur-[100px] opacity-20 -ml-20 -mt-20"></div>
-      <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-600 rounded-full blur-[100px] opacity-20 -mr-20 -mb-20"></div>
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-purple-200">
+      
+      {/* BARRA DE NAVEGACIÓN PÚBLICA PULIDA ✨ */}
+      <nav className="absolute top-0 w-full z-50 px-6 py-6 md:px-12 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-slate-100/20">
+        {/* EL LOGO: Ahora está limpio, solo el texto profesional CARRIZO Comex */}
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-extrabold text-slate-900 tracking-tight">CARRIZO <span className="text-purple-600 font-medium">Comex</span></span>
+        </div>
+        
+        {/* EL BOTÓN ÚNICO: Sin superposiciones ruidosas. Una sola llamada a la acción. */}
+        <Link 
+          href="/operaciones" 
+          className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-full transition-all shadow-md text-sm whitespace-nowrap"
+        >
+          Ingresar al Sistema →
+        </Link>
+      </nav>
 
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 relative z-10">
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-slate-50 mb-4 shadow-md bg-white">
-              {/* Aquí va a aparecer tu logo de la carpeta public */}
-              <Image src="/logo.jpg" alt="Logo Carrizo" fill className="object-cover" />
+      {/* SECCIÓN PRINCIPAL (HERO) */}
+      <main className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 lg:px-8 overflow-hidden">
+        {/* Círculos decorativos de fondo */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob"></div>
+        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-emerald-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob animation-delay-2000"></div>
+
+        <div className="max-w-5xl mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold mb-8 uppercase tracking-wider border border-purple-200">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+            </span>
+            Plataforma 100% Operativa
           </div>
-          <h1 className="text-3xl font-bold tracking-wide text-slate-900 text-center">
-            CARRIZO <span className="text-purple-600 font-light">Comex</span>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 leading-tight">
+            El Asistente Inteligente para <br className="hidden md:block"/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+              Despachantes de Aduana
+            </span>
           </h1>
-          <p className="text-slate-500 mt-2 text-sm text-center">Plataforma de Gestión Aduanera</p>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Email Profesional</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-purple-600 outline-none transition-all"
-              placeholder="majo@carrizocomex.com"
-              required
-            />
+          
+          <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
+            Calculá tributos en segundos, clasificá mercadería con Inteligencia Artificial y gestioná todos tus despachos desde una única plataforma en la nube.
+          </p>
+          
+          <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+            <Link 
+              href="/operaciones" 
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-purple-600/30 transition-all text-lg flex items-center justify-center gap-2"
+            >
+              🚀 Comenzar ahora
+            </Link>
+            <Link 
+              href="/calculadora" 
+              className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-bold py-4 px-8 rounded-full shadow-sm transition-all text-lg flex items-center justify-center gap-2"
+            >
+              🧮 Probar Calculadora
+            </Link>
           </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Contraseña</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-purple-600 outline-none transition-all"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={cargando}
-            className="w-full bg-slate-900 text-white py-3.5 rounded-lg font-bold hover:bg-purple-700 transition-all shadow-lg flex justify-center items-center disabled:opacity-70"
-          >
-            {cargando ? 'Autenticando...' : 'Iniciar Sesión'}
-          </button>
-        </form>
-
-        <div className="mt-8 text-center text-xs text-slate-400 font-medium">
-          <p>Sistema exclusivo para personal autorizado.</p>
-          <p className="mt-1">© 2026 CARRIZO COMEX V1.0</p>
         </div>
-      </div>
+      </main>
+
+      {/* SECCIÓN DE CARACTERÍSTICAS (BENEFICIOS) */}
+      <section className="bg-white py-24 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            
+            <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-xl transition-all group">
+              <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🤖</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Clasificación con IA</h3>
+              <p className="text-slate-600 font-medium">Olvidate de buscar en nomencladores eternos. Nuestra IA analiza la descripción del producto y te sugiere la posición NCM exacta al instante.</p>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-xl transition-all group">
+              <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🧮</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Motor Tributario</h3>
+              <p className="text-slate-600 font-medium">Calculadora de alta precisión. Estimá bases CIF, Derechos, IVA, Ganancias e IIBB, y exportá presupuestos en PDF con tu marca.</p>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-xl transition-all group">
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">🚦</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Alertas Proactivas</h3>
+              <p className="text-slate-600 font-medium">Un panel de control inteligente que vigila tus fechas de vencimiento y te notifica con colores cuando un despacho requiere atención urgente.</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-900 py-12 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="flex justify-center items-center gap-2 mb-4">
+            <span className="text-xl font-extrabold text-white tracking-tight">CARRIZO <span className="text-purple-400 font-medium">Comex</span></span>
+          </div>
+          <p className="text-slate-400 text-sm">© {new Date().getFullYear()} Plataforma desarrollada para profesionales del Comercio Exterior.</p>
+        </div>
+      </footer>
+
     </div>
   )
 }
