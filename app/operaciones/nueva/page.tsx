@@ -29,14 +29,12 @@ export default function NuevaOperacion() {
     pais: '',
     ncm: '',
     esPeligroso: 'No',
-    primerDespacho: 'No',
     fobEstimado: '',
-    // NUEVOS CAMPOS - PASO 5 (Logística)
+    fechaVencimiento: '', // 👈 NUEVO: El estado de la fecha
     domicilio: '',
     cbu: '',
     pesoNeto: '',
     pesoBruto: '',
-    // NUEVOS CAMPOS - PASO 5 (Checklist de Documentos)
     docs: {
       afip: false,
       malvina: false,
@@ -59,7 +57,6 @@ export default function NuevaOperacion() {
     })
   }
 
-  // Función especial para manejar el Checklist de documentos
   const handleDocChange = (docName: string) => {
     setFormData({
       ...formData,
@@ -81,11 +78,9 @@ export default function NuevaOperacion() {
     item.descripcion.toLowerCase().includes(busquedaNcm.toLowerCase())
   )
 
-  // Actualizamos el límite a 5 pasos
   const siguientePaso = () => { if (paso < 5) setPaso(paso + 1) }
   const anteriorPaso = () => { if (paso > 1) setPaso(paso - 1) }
 
-  // EL CEREBRO DE NUESTRA IA MÁGICA 🤖
   const sugerirNcmConIA = async () => {
     setIaCargando(true)
 
@@ -117,7 +112,6 @@ export default function NuevaOperacion() {
   }
 
   const guardarOperacion = async () => {
-    // Armamos el paquete completo con los datos originales + los nuevos
     const nuevaOperacion = {
       tipo: formData.tipo,
       cliente: formData.clienteNombre,
@@ -128,12 +122,11 @@ export default function NuevaOperacion() {
       es_peligroso: formData.esPeligroso,
       fob: parseFloat(formData.fobEstimado) || 0,
       estado: 'Pendiente',
-      // 👇 ACÁ ESTÁN LOS NUEVOS DATOS DE LOGÍSTICA 👇
+      fecha_vencimiento: formData.fechaVencimiento ? formData.fechaVencimiento : null, // 👈 NUEVO: Mandamos la fecha a Supabase
       domicilio: formData.domicilio,
       cbu: formData.cbu,
       peso_neto: parseFloat(formData.pesoNeto) || 0,
       peso_bruto: parseFloat(formData.pesoBruto) || 0,
-      // 👇 ACÁ ESTÁN LOS TILDES DEL CHECKLIST 👇
       docs_afip: formData.docs.afip,
       docs_malvina: formData.docs.malvina,
       docs_factura: formData.docs.factura,
@@ -161,7 +154,6 @@ export default function NuevaOperacion() {
           <p className="text-slate-600 font-medium">Completá los datos paso a paso</p>
         </div>
 
-        {/* BARRA DE PROGRESO ACTUALIZADA A 5 PASOS */}
         <div className="flex justify-between mb-8 px-2">
           {[1, 2, 3, 4, 5].map((num) => (
             <div key={num} className="flex items-center flex-1 last:flex-none">
@@ -215,24 +207,31 @@ export default function NuevaOperacion() {
 
           {paso === 3 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">Producto y Riesgo</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Producto, Riesgo y Tiempos</h2>
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
                   <textarea name="productoDescripcion" value={formData.productoDescripcion} onChange={handleChange} placeholder="Ej: Aditivos químicos industriales..." rows={2} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1">
                     <label className="block text-sm font-bold text-slate-700 mb-2">Origen / Destino</label>
                     <select name="pais" value={formData.pais} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium bg-white">
                       <option value="">Seleccionar país...</option>
                       {paisesMundo.map((pais) => ( <option key={pais} value={pais}>{pais}</option> ))}
                     </select>
                   </div>
-                  <div>
+                  <div className="md:col-span-1">
                      <label className="block text-sm font-bold text-slate-700 mb-2">Valor FOB (USD)</label>
                      <input type="number" name="fobEstimado" value={formData.fobEstimado} onChange={handleChange} placeholder="0.00" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium" />
+                  </div>
+                  {/* 👇 NUEVO CAMPO DE VENCIMIENTO 👇 */}
+                  <div className="md:col-span-1">
+                     <label className="block text-sm font-bold text-red-600 mb-2 flex items-center gap-1">
+                       <span title="Alerta de Vencimiento">🚨 Vencimiento</span>
+                     </label>
+                     <input type="date" name="fechaVencimiento" value={formData.fechaVencimiento} onChange={handleChange} className="w-full px-4 py-3 border border-red-300 bg-red-50 rounded-lg text-red-900 font-bold focus:ring-2 focus:ring-red-600 outline-none" />
                   </div>
                 </div>
 
@@ -254,7 +253,6 @@ export default function NuevaOperacion() {
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
               <div className="space-y-6">
                 
-                {/* INTERFAZ DEL ASISTENTE IA */}
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-100 shadow-sm relative overflow-hidden">
                   <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
                   
@@ -305,14 +303,12 @@ export default function NuevaOperacion() {
             </div>
           )}
 
-          {/* NUEVO PASO 5: DOCUMENTACIÓN Y LOGÍSTICA */}
           {paso === 5 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>
               
               <div className="space-y-6">
                 
-                {/* Datos Duros */}
                 <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Datos Operativos</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -335,13 +331,11 @@ export default function NuevaOperacion() {
                   </div>
                 </div>
 
-                {/* Checklist de Documentos */}
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-800 mb-3 uppercase tracking-wider">Checklist Documental</h3>
                   <p className="text-xs text-slate-500 mb-4">Marcá los documentos que el cliente ya te entregó o gestionaste.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Items del Checklist */}
                     {[
                       { id: 'afip', label: 'Constancia AFIP/ARCA' },
                       { id: 'malvina', label: 'Alta Sistema Malvina' },
