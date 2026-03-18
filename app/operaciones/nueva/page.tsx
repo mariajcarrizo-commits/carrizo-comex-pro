@@ -25,12 +25,13 @@ export default function NuevaOperacion() {
     tipo: '',
     clienteNombre: '',
     clienteCuit: '',
+    emailCliente: '', // 👈 NUEVO: El estado para guardar el mail
     productoDescripcion: '',
     pais: '',
     ncm: '',
     esPeligroso: 'No',
     fobEstimado: '',
-    fechaVencimiento: '', // 👈 NUEVO: El estado de la fecha
+    fechaVencimiento: '', 
     domicilio: '',
     cbu: '',
     pesoNeto: '',
@@ -116,13 +117,14 @@ export default function NuevaOperacion() {
       tipo: formData.tipo,
       cliente: formData.clienteNombre,
       cuit: formData.clienteCuit,
+      email_cliente: formData.emailCliente.toLowerCase(), // 👈 NUEVO: Lo mandamos en minúsculas a la base de datos
       producto: formData.productoDescripcion,
       pais: formData.pais,
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
       fob: parseFloat(formData.fobEstimado) || 0,
       estado: 'Pendiente',
-      fecha_vencimiento: formData.fechaVencimiento ? formData.fechaVencimiento : null, // 👈 NUEVO: Mandamos la fecha a Supabase
+      fecha_vencimiento: formData.fechaVencimiento ? formData.fechaVencimiento : null,
       domicilio: formData.domicilio,
       cbu: formData.cbu,
       peso_neto: parseFloat(formData.pesoNeto) || 0,
@@ -192,14 +194,24 @@ export default function NuevaOperacion() {
           {paso === 2 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Datos del Cliente</h2>
-              <div className="space-y-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
                   <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Ej: PAVECO S.A." className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">CUIT</label>
                   <input type="text" name="clienteCuit" value={formData.clienteCuit} onChange={handleChange} placeholder="Ej: 30-12345678-9" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                </div>
+                
+                {/* 👇 NUEVO CAMPO: EMAIL DEL CLIENTE 👇 */}
+                <div className="md:col-span-2 pt-2">
+                  <label className="block text-sm font-bold text-purple-700 mb-2 flex items-center gap-2">
+                    📧 Email del Cliente
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">Para acceso al Portal</span>
+                  </label>
+                  <input type="email" name="emailCliente" value={formData.emailCliente} onChange={handleChange} placeholder="paveco@empresa.com" className="w-full px-4 py-3 border border-purple-200 bg-purple-50 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none placeholder-purple-300" />
+                  <p className="text-xs text-slate-500 mt-1 italic">Con este correo tu cliente podrá iniciar sesión en su propio panel de seguimiento.</p>
                 </div>
               </div>
             </div>
@@ -226,7 +238,6 @@ export default function NuevaOperacion() {
                      <label className="block text-sm font-bold text-slate-700 mb-2">Valor FOB (USD)</label>
                      <input type="number" name="fobEstimado" value={formData.fobEstimado} onChange={handleChange} placeholder="0.00" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium" />
                   </div>
-                  {/* 👇 NUEVO CAMPO DE VENCIMIENTO 👇 */}
                   <div className="md:col-span-1">
                      <label className="block text-sm font-bold text-red-600 mb-2 flex items-center gap-1">
                        <span title="Alerta de Vencimiento">🚨 Vencimiento</span>
