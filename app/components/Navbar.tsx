@@ -41,8 +41,7 @@ export default function Navbar() {
   }
 
   if (pathname === '/' || pathname === '/login') return null;
-
-  const esAdmin = email === 'mariaj.carrizo@gmail.com' || email === 'majo@carrizocomex.com'
+const esAdmin = email === 'mariaj.carrizo@gmail.com' || email === 'majo@carrizocomex.com' || email === 'demo1@carrizocomex.com'
 
   return (
     <nav className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
