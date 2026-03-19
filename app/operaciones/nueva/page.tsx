@@ -19,6 +19,7 @@ const paisesMundo = [
 ].sort()
 
 export default function NuevaOperacion() {
+  const [analisisIA, setAnalisisIA] = useState('');
   const [paso, setPaso] = useState(1)
   
   const [formData, setFormData] = useState({
@@ -83,33 +84,30 @@ export default function NuevaOperacion() {
   const anteriorPaso = () => { if (paso > 1) setPaso(paso - 1) }
 
   const sugerirNcmConIA = async () => {
-    setIaCargando(true)
-
+    setIaCargando(true);
+    setAnalisisIA(''); 
     try {
-      const respuesta = await fetch('/api/clasificar', {
+      const res = await fetch('/api/clasificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ descripcion: formData.productoDescripcion })
-      })
-
-      if (!respuesta.ok) throw new Error('Fallo en la conexión con la IA')
-
-      const data = await respuesta.json()
-      const sugerenciaIA = data.sugerencia || ''
+      });
+      const data = await res.json();
       
-      const partes = sugerenciaIA.split(' - ')
-      const codigoSugerido = partes[0] || sugerenciaIA
-
-      setFormData({ ...formData, ncm: codigoSugerido })
-      setBusquedaNcm(`✨ IA Sugiere: ${sugerenciaIA}`)
-      setMostrarSelectorNcm(true)
+      setAnalisisIA(data.sugerencia); 
+      
+      // 🧲 MAGIA: Buscamos un patrón de NCM (ej: 9004.10.00) en el texto de la IA
+      const ncmExtraida = data.sugerencia.match(/\b\d{4}\.\d{2}\.\d{2}\b/);
+      
+      // Si la IA nos devolvió un numerito con ese formato, lo autocompletamos
+      if (ncmExtraida) {
+        setFormData({ ...formData, ncm: ncmExtraida[0] });
+      }
       
     } catch (error) {
-      console.error("Error en la IA:", error)
-      alert("Hubo un cortocircuito al contactar a la IA. Revisá tu conexión.")
-    } finally {
-      setIaCargando(false)
+      setAnalisisIA("Error de conexión con la IA.");
     }
+    setIaCargando(false);
   }
   const guardarOperacion = async () => {
     // 🕵️‍♀️ NUEVO: Averiguamos quién está creando la operación en este momento
@@ -263,7 +261,7 @@ export default function NuevaOperacion() {
             </div>
           )}
 
-          {paso === 4 && (
+{paso === 4 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
               <div className="space-y-6">
@@ -272,9 +270,9 @@ export default function NuevaOperacion() {
                   <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
                   
                   <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2">
-                    ✨ Asistente de Clasificación IA
+                    ✨ Agente Aduanero Senior (IA)
                   </h3>
-                  <p className="text-xs text-purple-700 mb-4 font-medium">
+                  <p className="text-xs text-purple-700 mb-4 font-medium relative z-10">
                     Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span>
                   </p>
                   
@@ -282,24 +280,50 @@ export default function NuevaOperacion() {
                     type="button"
                     onClick={sugerirNcmConIA}
                     disabled={iaCargando || !formData.productoDescripcion}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {iaCargando ? (
-                      <><span className="animate-spin text-xl">⚙️</span> Procesando variables...</>
+                      <><span className="animate-spin text-xl">⚙️</span> Procesando normativa...</>
                     ) : (
-                      <>Sugerir Posición NCM</>
+                      <>Generar Análisis y Sugerir NCM</>
                     )}
                   </button>
+
+                  {/* 🤖 EL PANEL DE LECTURA DEL INFORME CON ESTILOS PREMIUM */}
+                  {analisisIA && (
+                    <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
+                      {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
+                        // Si tiene 3 asteriscos: Negrita, Cursiva y Color Uva oscuro
+                        if (parte.startsWith('***')) {
+                          return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
+                        }
+                        // Si tiene 2 asteriscos (por si la IA los usa en el texto): Solo Negrita
+                        if (parte.startsWith('**')) {
+                          return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
+                        }
+                        // Texto normal
+                        return <span key={index}>{parte}</span>;
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Posición NCM Confirmada</label>
                   <div className="flex gap-2">
-                    <input type="text" name="ncm" value={formData.ncm} onChange={handleChange} placeholder="Ej: 3824.99" className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold" />
+                    <input 
+                      type="text" 
+                      name="ncm" 
+                      value={formData.ncm} 
+                      onChange={handleChange} 
+                      placeholder="Ej: 9004.10.00" 
+                      className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500" 
+                    />
                     <button type="button" onClick={() => setMostrarSelectorNcm(!mostrarSelectorNcm)} className="px-4 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-slate-200">
                       🔍
                     </button>
                   </div>
+                
 
                   {mostrarSelectorNcm && (
                     <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50">
@@ -317,7 +341,6 @@ export default function NuevaOperacion() {
               </div>
             </div>
           )}
-
           {paso === 5 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>
