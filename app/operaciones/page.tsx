@@ -12,9 +12,22 @@ export default function OperacionesDashboard() {
 
   const cargarOperaciones = async () => {
     setCargando(true)
+    
+    // 1. Averiguamos quién inició sesión
+    const { data: { user } } = await supabase.auth.getUser()
+    const emailUsuario = user?.email
+
+    if (!emailUsuario) {
+      console.error("No hay usuario logueado")
+      setCargando(false)
+      return
+    }
+
+    // 2. Buscamos SOLO las operaciones que este usuario creó
     const { data, error } = await supabase
       .from('operaciones')
       .select('*')
+      .eq('email_creador', emailUsuario) // 👈 LA PARED INVISIBLE
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -63,61 +76,123 @@ export default function OperacionesDashboard() {
   const generarPDF = (op: any) => {
     const doc = new jsPDF();
     
-    // Cortamos el ID gigante para que sea solo una referencia cortita y prolija
-    const shortId = op.id.toString().substring(0, 6).toUpperCase();
+    // Formato de ID corto como en tu captura (ej: faf53149)
+    const shortId = op.id.toString().substring(0, 8);
 
-    doc.setFontSize(20);
-    doc.setTextColor(15, 23, 42); 
-    doc.text('CARRIZO Comex - Proforma Operativa', 14, 20);
-    
+    // --- ENCABEZADO PREMIUM ---
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59); // Pizarra oscuro
+    doc.text('CARRIZO', 14, 20);
+    doc.setTextColor(147, 51, 234); // Violeta de tu marca
+    doc.text('Comex', 45, 20);
+
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, 28);
-    doc.text(`Ref Interna: #OP-${shortId}`, 14, 34); // 👈 Referencia limpia
-    
+    doc.text('Especialistas en Comercio Exterior', 14, 26);
+
     doc.setDrawColor(220, 220, 220);
-    doc.line(14, 38, 196, 38);
+    doc.line(14, 30, 196, 30);
 
-    doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Datos Generales', 14, 50);
+    // --- TÍTULO ---
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
+    // --- TABLA 1: DATOS GENERALES ---
     autoTable(doc, {
-      startY: 55,
+      startY: 48,
       theme: 'grid',
       headStyles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold' },
-      bodyStyles: { textColor: [71, 85, 105] },
       body: [
-        ['Cliente / CUIT', `${op.cliente} (CUIT: ${op.cuit})`],
-        ['Tipo de Operación', op.tipo],
-        ['Estado Actual', op.estado],
+        ['Cliente / Razón Social', op.cliente],
+        ['CUIT', op.cuit || 'No especificado'],
+        ['Domicilio Operativo', op.domicilio || 'No especificado'],
         ['Mercadería', op.producto],
-        ['Posición NCM', op.posicion_ncm],
-        ['Origen/Destino', op.pais],
-        ['Valor FOB', `USD ${op.fob.toLocaleString()}`],
-        ['Fecha Vencimiento', op.fecha_vencimiento ? new Date(op.fecha_vencimiento).toLocaleDateString('es-AR') : 'No registrada']
+        ['Posición NCM (IA)', op.posicion_ncm],
+        ['Valor FOB Estimado', `USD ${op.fob.toLocaleString()}`],
+        ['Peso (Neto / Bruto)', `${op.peso_neto || 0} kg / ${op.peso_bruto || 0} kg`]
       ],
     });
 
-    const alturaDocs = (doc as any).lastAutoTable.finalY + 15;
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
 
+    // --- TABLA 2: ESTIMACIÓN DE COSTOS (¡LA NUEVA MAGIA!) ---
+    if (op.fob > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Estimación de Costos y Tributos (Referencial)', 14, currentY);
+
+      // Cálculos automáticos promediados
+      const seguroFlete = op.fob * 0.05; // 5% estimado de flete y seguro
+      const cif = op.fob + seguroFlete;
+      const derechos = cif * 0.16; // 16% promedio de Derechos de Importación
+      const tasaEst = cif * 0.03; // 3% Tasa de Estadística
+      const baseIva = cif + derechos + tasaEst;
+      const iva = baseIva * 0.21;
+      const ivaAdic = baseIva * 0.20;
+      const ganancias = baseIva * 0.06;
+      const iibb = baseIva * 0.025;
+      const totalTributos = derechos + tasaEst + iva + ivaAdic + ganancias + iibb;
+      const honorarios = Math.max(cif * 0.01, 250); // 1% del CIF o Mínimo de USD 250
+
+      autoTable(doc, {
+        startY: currentY + 5,
+        theme: 'plain',
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: { 
+          0: { fontStyle: 'bold', textColor: [71, 85, 105] }, 
+          1: { halign: 'right', textColor: [15, 23, 42] } 
+        },
+        body: [
+          ['Valor FOB de la Mercadería', `USD ${op.fob.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['Flete Internacional y Seguro (Est. 5%)', `USD ${seguroFlete.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['Base Imponible (Valor en Aduana / CIF)', `USD ${cif.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['Derechos (Est. 16%) + Tasa Est. (3%)', `USD ${(derechos + tasaEst).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['IVA (21%) + IVA Adicional (20%)', `USD ${(iva + ivaAdic).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['Anticipo Ganancias (6%) + IIBB (2.5%)', `USD ${(ganancias + iibb).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['Total Tributos Aduaneros (Aprox.)', `USD ${totalTributos.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['Honorarios Profesionales Despachante', `USD ${honorarios.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
+          ['', ''], // Fila vacía separadora
+          ['TOTAL ESTIMADO DE LA OPERACIÓN', `USD ${(cif + totalTributos + honorarios).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`]
+        ],
+        // Pintamos de gris clarito la fila del TOTAL para que destaque
+        didParseCell: function(data) {
+          if (data.row.index === 9) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [241, 245, 249];
+          }
+        }
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+      
+      // Nota legal (Salvacontingencias)
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('*Nota: Los valores expresados son estimaciones referenciales basadas en alícuotas generales.', 14, currentY);
+      doc.text('La liquidación tributaria exacta se realizará mediante el Sistema Informático Malvina (SIM) al oficializar.', 14, currentY + 4);
+      
+      currentY += 15;
+    }
+
+    // --- TABLA 3: CHECKLIST LOGÍSTICO ---
     doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Checklist Logístico y Documental', 14, alturaDocs);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Estado de Documentación Logística:', 14, currentY);
 
     const getEstadoData = (estado: boolean): any => {
       if (estado) {
-        return { content: 'Presentado', styles: { fillColor: [220, 252, 231], textColor: [22, 101, 52] } }; 
+        return { content: 'Presentado', styles: { textColor: [22, 101, 52] } }; 
       } else {
-        return { content: 'Pendiente', styles: { fillColor: [254, 243, 199], textColor: [146, 64, 14] } }; 
+        return { content: 'Pendiente', styles: { textColor: [146, 64, 14] } }; 
       }
     };
 
     autoTable(doc, {
-      startY: alturaDocs + 5,
-      theme: 'plain',
+      startY: currentY + 5,
+      theme: 'grid',
       headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
-      styles: { lineColor: [220, 220, 220], lineWidth: 0.1 },
+      head: [['Documento Requerido', 'Estado Actual']],
       body: [
         ['Constancia AFIP/ARCA', getEstadoData(op.docs_afip)],
         ['Alta Sistema Malvina', getEstadoData(op.docs_malvina)],
@@ -129,7 +204,15 @@ export default function OperacionesDashboard() {
       ],
     });
 
-    doc.save(`Proforma_${op.cliente}_${shortId}.pdf`);
+    // --- PIE DE PÁGINA ---
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, pageHeight - 15);
+    doc.text(`Proforma ID: ${shortId}`, 14, pageHeight - 10);
+
+    // Guardar el archivo
+    doc.save(`Resumen_${op.cliente}_${shortId}.pdf`);
   }
 
   return (

@@ -111,13 +111,17 @@ export default function NuevaOperacion() {
       setIaCargando(false)
     }
   }
-
   const guardarOperacion = async () => {
+    // 🕵️‍♀️ NUEVO: Averiguamos quién está creando la operación en este momento
+    const { data: { user } } = await supabase.auth.getUser()
+    const emailCreador = user?.email || 'desconocido'
+
     const nuevaOperacion = {
       tipo: formData.tipo,
       cliente: formData.clienteNombre,
       cuit: formData.clienteCuit,
-      email_cliente: formData.emailCliente.toLowerCase(), // 👈 NUEVO: Lo mandamos en minúsculas a la base de datos
+      email_cliente: formData.emailCliente.toLowerCase(),
+      email_creador: emailCreador, // 👈 LA BARRERA MULTI-TENANT: Anotamos de quién es esta carga
       producto: formData.productoDescripcion,
       pais: formData.pais,
       posicion_ncm: formData.ncm,
@@ -197,7 +201,7 @@ export default function NuevaOperacion() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
-                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Ej: PAVECO S.A." className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Ej: MAJOSHKA" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">CUIT</label>
@@ -210,7 +214,7 @@ export default function NuevaOperacion() {
                     📧 Email del Cliente
                     <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">Para acceso al Portal</span>
                   </label>
-                  <input type="email" name="emailCliente" value={formData.emailCliente} onChange={handleChange} placeholder="paveco@empresa.com" className="w-full px-4 py-3 border border-purple-200 bg-purple-50 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none placeholder-purple-300" />
+                  <input type="email" name="emailCliente" value={formData.emailCliente} onChange={handleChange} placeholder="majoshka@empresa.com" className="w-full px-4 py-3 border border-purple-200 bg-purple-50 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none placeholder-purple-300" />
                   <p className="text-xs text-slate-500 mt-1 italic">Con este correo tu cliente podrá iniciar sesión en su propio panel de seguimiento.</p>
                 </div>
               </div>

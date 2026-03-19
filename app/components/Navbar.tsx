@@ -1,74 +1,91 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
-  const router = useRouter()
+  const [email, setEmail] = useState<string | null>(null)
+  const [cargandoUsuario, setCargandoUsuario] = useState(true) // 👈 NUEVO
+  const pathname = usePathname()
+
+  useEffect(() => {
+    const getUsuario = async () => {
+      setCargandoUsuario(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setEmail(user.email)
+      }
+      setCargandoUsuario(false)
+    }
+    getUsuario()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setEmail(session.user.email)
+      } else {
+        setEmail(null)
+      }
+      setCargandoUsuario(false)
+    })
+
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/')
+    window.location.href = '/' 
   }
 
-  return (
-    <nav className="bg-slate-900 text-white shadow-md border-b border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          
-          {/* LOGO Y PERFIL (Móvil) */}
-          <div className="flex justify-between items-center w-full md:w-auto">
-            <div className="flex items-center gap-3">
-              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-slate-700 bg-white">
-                  <Image src="/logo.jpg" alt="Logo Carrizo" fill className="object-cover" />
-              </div>
-              <span className="text-xl font-bold tracking-wide text-white">
-                CARRIZO <span className="text-purple-400 font-light">Comex</span>
-              </span>
-            </div>
-            
-            <div className="md:hidden flex items-center gap-3">
-                <div className="h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center text-xs font-bold border-2 border-slate-800">
-                    MC
-                </div>
-                <button onClick={handleLogout} className="text-slate-400 hover:text-red-400 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                    </svg>
-                </button>
-            </div>
-          </div>
-          
-          {/* ENLACES RESPONSIVOS */}
-          <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-            <div className="flex md:ml-8 gap-2 min-w-max">
-              <Link href="/dashboard" className="px-4 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Dashboard</Link>
-              <Link href="/operaciones" className="px-4 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Operaciones</Link>
-              <Link href="/calculadora" className="px-4 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Calculadora</Link>
-            </div>
-          </div>
-          
-          {/* PERFIL (Desktop) */}
-          <div className="hidden md:flex items-center gap-3">
-             <div className="text-right">
-                <p className="text-sm font-bold text-white">Majo Carrizo</p>
-                {/* BOTÓN CERRAR SESIÓN DEBAJO DEL NOMBRE */}
-                <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-red-400 transition-colors flex items-center justify-end w-full mt-0.5 gap-1">
-                   <span>Cerrar sesión</span>
-                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                   </svg>
-                </button>
-             </div>
-             <div className="h-10 w-10 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold border-2 border-slate-700 shadow-lg ml-2">
-                MC
-             </div>
-          </div>
+  if (pathname === '/' || pathname === '/login') return null;
 
-        </div>
+  const esAdmin = email === 'mariaj.carrizo@gmail.com' || email === 'majo@carrizocomex.com'
+
+  return (
+    <nav className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
+      <div className="flex items-center gap-3">
+         <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700 bg-white">
+           <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+         </div>
+         <span className="text-lg font-bold text-white">CARRIZO <span className="text-purple-500">Comex</span></span>
+      </div>
+
+      <div className="hidden md:flex gap-6 items-center">
+        {cargandoUsuario ? ( // 👈 MIENTRAS PIENSA
+           <span className="text-sm font-medium text-slate-500 animate-pulse">Verificando credenciales...</span>
+        ) : esAdmin ? ( // 👈 SI SOS VOS
+          <>
+            <Link href="/operaciones" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Dashboard</Link>
+            <Link href="/operaciones/nueva" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Operaciones</Link>
+            <Link href="/calculadora" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Calculadora</Link>
+          </>
+        ) : ( // 👈 SI ES EL CLIENTE
+          <span className="text-sm font-bold text-purple-400 bg-purple-900/30 px-3 py-1 rounded-full border border-purple-800/50">
+            Vista de Cliente
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-4">
+         <div className="hidden md:block text-right">
+           <div className="text-sm font-bold text-white">{cargandoUsuario ? '...' : (esAdmin ? 'Majo Carrizo' : 'Cliente')}</div>
+           <div className="text-xs text-slate-400">{email || '...'}</div>
+         </div>
+         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ${cargandoUsuario ? 'bg-slate-800' : (esAdmin ? 'bg-purple-600' : 'bg-slate-700')}`}>
+            {cargandoUsuario ? '⏳' : (esAdmin ? 'MC' : 'CL')}
+         </div>
+         
+         <button 
+           onClick={handleLogout} 
+           className="text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-900/20 px-3 py-2 rounded-lg transition-all ml-2 flex items-center gap-1" 
+           title="Cerrar sesión segura"
+         >
+           Cerrar Sesión
+         </button>
       </div>
     </nav>
-  );
+  )
 }

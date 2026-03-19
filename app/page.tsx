@@ -13,7 +13,7 @@ export default function Home() {
         
         {/* EL BOTÓN ÚNICO: Sin superposiciones ruidosas. Una sola llamada a la acción. */}
         <Link 
-          href="/operaciones" 
+          href="/login" 
           className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-full transition-all shadow-md text-sm whitespace-nowrap"
         >
           Ingresar al Sistema →
