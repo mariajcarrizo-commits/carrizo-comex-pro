@@ -136,19 +136,12 @@ export default function CalculadoraTributos() {
     <div className="min-h-screen bg-[#F5F7F9] p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         
-        <div className="mb-8 flex flex-col md:flex-row justify-between md:items-end gap-4">
+        <div className="mb-8 flex justify-between items-end">
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#0D1B2A] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Calculadora de Tributos</h1>
             <p className="text-[#3A3E46] font-medium text-sm md:text-base">Estimación rápida de costos de nacionalización (Valores en USD)</p>
           </div>
-          {/* BOTÓN MÓVIL (Se muestra arriba en celu para no perderlo) */}
-          <button 
-            onClick={descargarPDF}
-            className="md:hidden w-full flex justify-center items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all"
-          >
-            📄 Descargar Presupuesto
-          </button>
-          {/* BOTÓN DESKTOP */}
+          {/* BOTÓN DESKTOP (Solo visible en PC) */}
           <button 
             onClick={descargarPDF}
             className="hidden md:flex items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all"
@@ -202,73 +195,81 @@ export default function CalculadoraTributos() {
           </div>
 
           {/* --- PANEL DERECHO --- */}
-          <div className="bg-[#121A30] p-6 md:p-10 rounded-3xl text-white shadow-xl space-y-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-[#7C3AED] rounded-full blur-[120px] opacity-25 -mr-40 -mt-40"></div>
-            
-            <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 relative z-10">Resumen de Liquidación</h2>
-            
-            <div className="relative z-10 space-y-4 md:space-y-5">
-              <div className="flex justify-between items-center text-[#E1E7EF]">
-                <span className="text-sm md:text-lg font-medium">Base Imponible (CIF):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.cif)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#A78BFA]">
-                <span className="text-sm md:text-lg font-medium">Derechos de Impo ({inputs.arancel_pct}%):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.derechos)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#A78BFA]">
-                <span className="text-sm md:text-lg font-medium">Tasa de Estadística (3%):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.tasa_est)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#E1E7EF] pt-2 border-t border-[#2A344C]">
-                <span className="text-sm md:text-lg font-medium">IVA ({inputs.iva_pct}%):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.tributo_iva)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#A78BFA]">
-                <span className="text-sm md:text-lg font-medium">Percepción IVA (20%):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_iva_20)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#A78BFA]">
-                <span className="text-sm md:text-lg font-medium">Anticipo Ganancias (6%):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_gan_6)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#A78BFA] pb-4 border-b border-[#2A344C]">
-                <span className="text-sm md:text-lg font-medium">Percepción IIBB (2.5%):</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_iibb_2_5)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#F87171] font-bold text-lg md:text-xl pt-2">
-                <span className="text-sm md:text-lg">TOTAL IMPUESTOS:</span>
-                <span style={calculatorMono}>{formatUsd(data.total_tributos)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-[#E1E7EF] pt-2 border-t border-[#2A344C]">
-                <span className="text-sm md:text-lg font-medium">Honorarios Despachante:</span>
-                <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(inputs.honorarios)}</span>
-              </div>
-
-              {/* 👇 ACÁ ESTÁ LA MAGIA PARA CELULARES 👇 */}
-              <div className="bg-[#121A30] border border-[#7C3AED]/40 p-5 md:p-6 rounded-2xl mt-8 shadow-inner relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-[#10B981] rounded-full blur-[60px] opacity-20 -mr-20 -mt-20"></div>
-                
-                {/* Cambiamos el flex para que se apile en celular y se ponga uno al lado del otro en PC */}
-                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-white relative z-10 gap-2 sm:gap-0">
-                  <span className="font-bold text-lg md:text-xl text-[#94A3B8] sm:text-white">Costo Total Estimado:</span>
-                  <span className="font-extrabold text-3xl md:text-4xl text-[#10B981] break-words" style={calculatorMono}>
-                    {formatUsd(data.costo_total_estimado)}
-                  </span>
+          <div className="bg-[#121A30] p-6 md:p-10 rounded-3xl text-white shadow-xl space-y-6 relative overflow-hidden flex flex-col justify-between h-full">
+            <div>
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[#7C3AED] rounded-full blur-[120px] opacity-25 -mr-40 -mt-40"></div>
+              
+              <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 relative z-10">Resumen de Liquidación</h2>
+              
+              <div className="relative z-10 space-y-4 md:space-y-5">
+                <div className="flex justify-between items-center text-[#E1E7EF]">
+                  <span className="text-sm md:text-lg font-medium">Base Imponible (CIF):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.cif)}</span>
                 </div>
-                
-                <p className="text-xs md:text-sm text-[#94A3B8] mt-3 sm:mt-2 text-left sm:text-right relative z-10">Mercadería + Tributos + Honorarios</p>
-              </div>
 
+                <div className="flex justify-between items-center text-[#A78BFA]">
+                  <span className="text-sm md:text-lg font-medium">Derechos de Impo ({inputs.arancel_pct}%):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.derechos)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#A78BFA]">
+                  <span className="text-sm md:text-lg font-medium">Tasa de Estadística (3%):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.tasa_est)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#E1E7EF] pt-2 border-t border-[#2A344C]">
+                  <span className="text-sm md:text-lg font-medium">IVA ({inputs.iva_pct}%):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.tributo_iva)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#A78BFA]">
+                  <span className="text-sm md:text-lg font-medium">Percepción IVA (20%):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_iva_20)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#A78BFA]">
+                  <span className="text-sm md:text-lg font-medium">Anticipo Ganancias (6%):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_gan_6)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#A78BFA] pb-4 border-b border-[#2A344C]">
+                  <span className="text-sm md:text-lg font-medium">Percepción IIBB (2.5%):</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_iibb_2_5)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#F87171] font-bold text-lg md:text-xl pt-2">
+                  <span className="text-sm md:text-lg">TOTAL IMPUESTOS:</span>
+                  <span style={calculatorMono}>{formatUsd(data.total_tributos)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[#E1E7EF] pt-2 border-t border-[#2A344C]">
+                  <span className="text-sm md:text-lg font-medium">Honorarios Despachante:</span>
+                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(inputs.honorarios)}</span>
+                </div>
+
+                <div className="bg-[#121A30] border border-[#7C3AED]/40 p-5 md:p-6 rounded-2xl mt-8 shadow-inner relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-[#10B981] rounded-full blur-[60px] opacity-20 -mr-20 -mt-20"></div>
+                  
+                  <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-white relative z-10 gap-2 sm:gap-0">
+                    <span className="font-bold text-lg md:text-xl text-[#94A3B8] sm:text-white">Costo Total Estimado:</span>
+                    <span className="font-extrabold text-3xl md:text-4xl text-[#10B981] break-words" style={calculatorMono}>
+                      {formatUsd(data.costo_total_estimado)}
+                    </span>
+                  </div>
+                  
+                  <p className="text-xs md:text-sm text-[#94A3B8] mt-3 sm:mt-2 text-left sm:text-right relative z-10">Mercadería + Tributos + Honorarios</p>
+                </div>
+              </div>
             </div>
+
+            {/* 👇 BOTÓN MÓVIL (Solo visible en celular, lógicamente abajo del total) 👇 */}
+            <button 
+              onClick={descargarPDF}
+              className="md:hidden w-full mt-8 flex justify-center items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-4 px-6 rounded-xl shadow-xl border border-[#059669] transition-all"
+            >
+              📄 Descargar Presupuesto PDF
+            </button>
+
           </div>
 
         </div>
