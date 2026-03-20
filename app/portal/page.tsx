@@ -77,7 +77,7 @@ export default function PortalCliente() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
             <div className="text-6xl mb-4">📦</div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">No tenés operaciones activas</h3>
-            <p className="text-slate-500">Cuando tu despachante asigne una carga a tu cuenta, aparecerá aquí.</p>
+            <p className="text-slate-500">Cuando asignes una carga, aparecerá aquí.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
