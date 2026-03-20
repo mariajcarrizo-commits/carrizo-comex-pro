@@ -26,7 +26,7 @@ export default function NuevaOperacion() {
     tipo: '',
     clienteNombre: '',
     clienteCuit: '',
-    emailCliente: '', // 👈 NUEVO: El estado para guardar el mail
+    emailCliente: '', 
     productoDescripcion: '',
     pais: '',
     ncm: '',
@@ -37,6 +37,9 @@ export default function NuevaOperacion() {
     cbu: '',
     pesoNeto: '',
     pesoBruto: '',
+    honorarios: '', 
+    tipo_honorario: 'fijo', 
+    gastos_logisticos: '',
     docs: {
       afip: false,
       malvina: false,
@@ -90,16 +93,17 @@ export default function NuevaOperacion() {
       const res = await fetch('/api/clasificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ descripcion: formData.productoDescripcion })
+        body: JSON.stringify({ 
+          descripcion: formData.productoDescripcion,
+          tipo: formData.tipo 
+        })
       });
       const data = await res.json();
       
       setAnalisisIA(data.sugerencia); 
       
-      // 🧲 MAGIA: Buscamos un patrón de NCM (ej: 9004.10.00) en el texto de la IA
       const ncmExtraida = data.sugerencia.match(/\b\d{4}\.\d{2}\.\d{2}\b/);
       
-      // Si la IA nos devolvió un numerito con ese formato, lo autocompletamos
       if (ncmExtraida) {
         setFormData({ ...formData, ncm: ncmExtraida[0] });
       }
@@ -109,8 +113,8 @@ export default function NuevaOperacion() {
     }
     setIaCargando(false);
   }
+
   const guardarOperacion = async () => {
-    // 🕵️‍♀️ NUEVO: Averiguamos quién está creando la operación en este momento
     const { data: { user } } = await supabase.auth.getUser()
     const emailCreador = user?.email || 'desconocido'
 
@@ -119,7 +123,7 @@ export default function NuevaOperacion() {
       cliente: formData.clienteNombre,
       cuit: formData.clienteCuit,
       email_cliente: formData.emailCliente.toLowerCase(),
-      email_creador: emailCreador, // 👈 LA BARRERA MULTI-TENANT: Anotamos de quién es esta carga
+      email_creador: emailCreador, 
       producto: formData.productoDescripcion,
       pais: formData.pais,
       posicion_ncm: formData.ncm,
@@ -129,6 +133,9 @@ export default function NuevaOperacion() {
       fecha_vencimiento: formData.fechaVencimiento ? formData.fechaVencimiento : null,
       domicilio: formData.domicilio,
       cbu: formData.cbu,
+      honorarios: parseFloat(formData.honorarios) || 0,
+      tipo_honorario: formData.tipo_honorario,
+      gastos_logisticos: parseFloat(formData.gastos_logisticos) || 0,
       peso_neto: parseFloat(formData.pesoNeto) || 0,
       peso_bruto: parseFloat(formData.pesoBruto) || 0,
       docs_afip: formData.docs.afip,
@@ -206,7 +213,6 @@ export default function NuevaOperacion() {
                   <input type="text" name="clienteCuit" value={formData.clienteCuit} onChange={handleChange} placeholder="Ej: 30-12345678-9" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
                 
-                {/* 👇 NUEVO CAMPO: EMAIL DEL CLIENTE 👇 */}
                 <div className="md:col-span-2 pt-2">
                   <label className="block text-sm font-bold text-purple-700 mb-2 flex items-center gap-2">
                     📧 Email del Cliente
@@ -221,7 +227,7 @@ export default function NuevaOperacion() {
 
           {paso === 3 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">Producto, Riesgo y Tiempos</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-6">Producto, Riesgo y Costos</h2>
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
@@ -248,6 +254,43 @@ export default function NuevaOperacion() {
                   </div>
                 </div>
 
+                <div className="col-span-1 md:col-span-3">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Honorarios del Despachante</label>
+                  <div className="flex gap-2">
+                    <select
+                      name="tipo_honorario"
+                      value={formData.tipo_honorario}
+                      onChange={handleChange}
+                      className="w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50"
+                    >
+                      <option value="fijo">Monto Fijo (USD)</option>
+                      <option value="porcentaje">Porcentaje FOB (%)</option>
+                    </select>
+                    <input
+                      type="number"
+                      name="honorarios"
+                      value={formData.honorarios}
+                      onChange={handleChange}
+                      placeholder={formData.tipo_honorario === 'fijo' ? "Ej: 350" : "Ej: 1.5"}
+                      className="w-2/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, el PDF calculará por defecto el 1% (Mínimo USD 250).</p>
+                </div>
+
+                <div className="col-span-1 md:col-span-3">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Gastos Logísticos / Flete (USD)</label>
+                  <input 
+                    type="number" 
+                    name="gastos_logisticos" 
+                    value={formData.gastos_logisticos} 
+                    onChange={handleChange} 
+                    placeholder="Ej: 300" 
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" 
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, el PDF estimará un valor referencial por defecto.</p>
+                </div>
+
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <div className="flex items-center justify-between">
                       <label className="text-slate-800 font-bold text-sm">¿Es carga peligrosa (IMO)?</label>
@@ -261,7 +304,7 @@ export default function NuevaOperacion() {
             </div>
           )}
 
-{paso === 4 && (
+          {paso === 4 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
               <div className="space-y-6">
@@ -289,19 +332,15 @@ export default function NuevaOperacion() {
                     )}
                   </button>
 
-                  {/* 🤖 EL PANEL DE LECTURA DEL INFORME CON ESTILOS PREMIUM */}
                   {analisisIA && (
                     <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
                       {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
-                        // Si tiene 3 asteriscos: Negrita, Cursiva y Color Uva oscuro
                         if (parte.startsWith('***')) {
                           return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
                         }
-                        // Si tiene 2 asteriscos (por si la IA los usa en el texto): Solo Negrita
                         if (parte.startsWith('**')) {
                           return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
                         }
-                        // Texto normal
                         return <span key={index}>{parte}</span>;
                       })}
                     </div>
@@ -324,7 +363,6 @@ export default function NuevaOperacion() {
                     </button>
                   </div>
                 
-
                   {mostrarSelectorNcm && (
                     <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50">
                       <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar sugerencia..." className="w-full px-3 py-2 border rounded mb-2 text-slate-900 font-medium outline-none focus:ring-2 focus:ring-purple-400" />
@@ -341,6 +379,7 @@ export default function NuevaOperacion() {
               </div>
             </div>
           )}
+
           {paso === 5 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>

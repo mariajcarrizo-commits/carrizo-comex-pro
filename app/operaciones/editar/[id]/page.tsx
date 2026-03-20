@@ -8,32 +8,74 @@ import { supabase } from '../../../../lib/supabase'
 export default function EditarOperacion() {
   const params = useParams()
   const router = useRouter()
-  const id = params.id
-
-  const [formData, setFormData] = useState<any>(null)
+  const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
 
+  // 1. MEMORIA CENTRAL PERFECTAMENTE ORDENADA
+  const [formData, setFormData] = useState({
+    cliente: '',
+    estado: 'Pendiente',
+    fecha_vencimiento: '',
+    fob: 0,
+    posicion_ncm: '',
+    peso_neto: 0,
+    peso_bruto: 0,
+    honorarios: 0,
+    tipo_honorario: 'fijo',
+    gastos_logisticos: 0, // 👈 Acá está tu nuevo campo bien definido
+    docs_afip: false,
+    docs_malvina: false,
+    docs_factura: false,
+    docs_packing: false,
+    docs_origen: false,
+    docs_tecnicas: false,
+    docs_transporte: false
+  })
+
+  // 2. BUSCADOR DE DATOS EN LA NUBE
   useEffect(() => {
     const cargarOperacion = async () => {
+      if (!params.id) return;
+      
       const { data, error } = await supabase
         .from('operaciones')
         .select('*')
-        .eq('id', id)
+        .eq('id', params.id)
         .single()
 
-      if (data) setFormData(data)
+      if (data) {
+        setFormData({
+          cliente: data.cliente || '',
+          estado: data.estado || 'Pendiente',
+          fecha_vencimiento: data.fecha_vencimiento || '',
+          fob: data.fob || 0,
+          posicion_ncm: data.posicion_ncm || '',
+          peso_neto: data.peso_neto || 0,
+          peso_bruto: data.peso_bruto || 0,
+          honorarios: data.honorarios || 0,
+          tipo_honorario: data.tipo_honorario || 'fijo',
+          gastos_logisticos: data.gastos_logisticos || 0, // 👈 Lo recuperamos de la base
+          docs_afip: data.docs_afip || false,
+          docs_malvina: data.docs_malvina || false,
+          docs_factura: data.docs_factura || false,
+          docs_packing: data.docs_packing || false,
+          docs_origen: data.docs_origen || false,
+          docs_tecnicas: data.docs_tecnicas || false,
+          docs_transporte: data.docs_transporte || false
+        })
+      }
+      setCargando(false)
     }
     cargarOperacion()
-  }, [id])
+  }, [params.id])
 
-  // Maneja los cambios de texto/números
+  // 3. FUNCIONES QUE MANEJAN LOS CLICS Y TEXTOS
   const handleChange = (e: any) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  // Maneja los tildes del checklist directamente
   const handleDocChange = (docName: string) => {
-    setFormData({ ...formData, [docName]: !formData[docName] })
+    setFormData({ ...formData, [docName]: !(formData as any)[docName] })
   }
 
   const guardarCambios = async () => {
@@ -41,18 +83,19 @@ export default function EditarOperacion() {
     const { error } = await supabase
       .from('operaciones')
       .update(formData)
-      .eq('id', id)
+      .eq('id', params.id)
 
     if (error) {
       alert('Error al actualizar: ' + error.message)
       setGuardando(false)
     } else {
-      router.push('/operaciones') // Volvemos al dashboard
+      router.push('/operaciones')
     }
   }
 
-  if (!formData) return <div className="p-8 text-center text-slate-500 font-bold mt-20">Cargando operación...</div>
+  if (cargando) return <div className="p-8 text-center text-slate-500 font-bold mt-20">Cargando operación...</div>
 
+  // 4. EL DISEÑO VISUAL (HTML)
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
@@ -80,14 +123,14 @@ export default function EditarOperacion() {
             >
               <option value="Pendiente">🟡 Pendiente</option>
               <option value="En Curso">🔵 En Curso</option>
-              <option value="Aprobada">🟢 Aprobada / Oficializada</option>
+              <option value="Aprobada / Oficializada">🟢 Aprobada / Oficializada</option>
               <option value="Con Observaciones">🔴 Con Observaciones</option>
             </select>
           </div>
 
           {/* SECCIÓN 2: DATOS OPERATIVOS CLAVE */}
           <div>
-            <h3 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Datos Logísticos</h3>
+            <h3 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Datos Logísticos y Comerciales</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Valor FOB (USD)</label>
@@ -105,6 +148,45 @@ export default function EditarOperacion() {
                 <label className="block text-xs font-bold text-slate-500 mb-1">Peso Bruto (kg)</label>
                 <input type="number" name="peso_bruto" value={formData.peso_bruto} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
               </div>
+
+              {/* HONORARIOS */}
+              <div className="col-span-1 md:col-span-2 mt-2">
+                <label className="block text-sm font-bold text-slate-700 mb-2">Honorarios del Despachante</label>
+                <div className="flex gap-2">
+                  <select
+                    name="tipo_honorario"
+                    value={formData.tipo_honorario}
+                    onChange={handleChange}
+                    className="w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50"
+                  >
+                    <option value="fijo">Monto Fijo (USD)</option>
+                    <option value="porcentaje">Porcentaje FOB (%)</option>
+                  </select>
+                  <input
+                    type="number"
+                    name="honorarios"
+                    value={formData.honorarios}
+                    onChange={handleChange}
+                    placeholder={formData.tipo_honorario === 'fijo' ? "Ej: 350" : "Ej: 1.5"}
+                    className="w-2/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* FLETE / GASTOS LOGÍSTICOS */}
+              <div className="col-span-1 md:col-span-2 mt-2">
+                <label className="block text-sm font-bold text-slate-700 mb-2">Gastos Logísticos / Flete (USD)</label>
+                <input 
+                  type="number" 
+                  name="gastos_logisticos" 
+                  value={formData.gastos_logisticos} 
+                  onChange={handleChange} 
+                  placeholder="Ej: 300" 
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" 
+                />
+                <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, el PDF estimará un valor referencial por defecto.</p>
+              </div>
+
             </div>
           </div>
 
@@ -121,12 +203,12 @@ export default function EditarOperacion() {
                 { id: 'docs_tecnicas', label: 'Certificaciones Técnicas' },
                 { id: 'docs_transporte', label: 'Carta Porte / CRT' },
               ].map((doc) => (
-                <label key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${formData[doc.id] ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
-                  <div className={`w-5 h-5 rounded flex items-center justify-center border ${formData[doc.id] ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>
-                      {formData[doc.id] && <span className="text-white text-xs">✓</span>}
+                <label key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${(formData as any)[doc.id] ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border ${(formData as any)[doc.id] ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>
+                      {(formData as any)[doc.id] && <span className="text-white text-xs">✓</span>}
                   </div>
-                  <input type="checkbox" className="hidden" checked={formData[doc.id] || false} onChange={() => handleDocChange(doc.id)} />
-                  <span className={`text-sm font-bold ${formData[doc.id] ? 'text-green-800' : 'text-slate-700'}`}>{doc.label}</span>
+                  <input type="checkbox" className="hidden" checked={(formData as any)[doc.id] || false} onChange={() => handleDocChange(doc.id)} />
+                  <span className={`text-sm font-bold ${(formData as any)[doc.id] ? 'text-green-800' : 'text-slate-700'}`}>{doc.label}</span>
                 </label>
               ))}
             </div>

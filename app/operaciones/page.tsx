@@ -12,8 +12,6 @@ export default function OperacionesDashboard() {
 
   const cargarOperaciones = async () => {
     setCargando(true)
-    
-    // 1. Averiguamos quién inició sesión
     const { data: { user } } = await supabase.auth.getUser()
     const emailUsuario = user?.email
 
@@ -23,11 +21,10 @@ export default function OperacionesDashboard() {
       return
     }
 
-    // 2. Buscamos SOLO las operaciones que este usuario creó
     const { data, error } = await supabase
       .from('operaciones')
       .select('*')
-      .eq('email_creador', emailUsuario) // 👈 LA PARED INVISIBLE
+      .eq('email_creador', emailUsuario)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -49,7 +46,6 @@ export default function OperacionesDashboard() {
     }
   }
 
-  // --- 🚦 MOTOR DE ALERTAS INTELIGENTES 🚦 ---
   const calcularAlerta = (fechaVencimiento: string | null) => {
     if (!fechaVencimiento) return null;
 
@@ -75,15 +71,12 @@ export default function OperacionesDashboard() {
 
   const generarPDF = (op: any) => {
     const doc = new jsPDF();
-    
-    // Formato de ID corto como en tu captura (ej: faf53149)
     const shortId = op.id.toString().substring(0, 8);
 
-    // --- ENCABEZADO PREMIUM ---
     doc.setFontSize(22);
-    doc.setTextColor(30, 41, 59); // Pizarra oscuro
+    doc.setTextColor(30, 41, 59);
     doc.text('CARRIZO', 14, 20);
-    doc.setTextColor(147, 51, 234); // Violeta de tu marca
+    doc.setTextColor(147, 51, 234);
     doc.text('Comex', 45, 20);
 
     doc.setFontSize(10);
@@ -93,12 +86,10 @@ export default function OperacionesDashboard() {
     doc.setDrawColor(220, 220, 220);
     doc.line(14, 30, 196, 30);
 
-    // --- TÍTULO ---
     doc.setFontSize(16);
     doc.setTextColor(15, 23, 42);
     doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
-    // --- TABLA 1: DATOS GENERALES ---
     autoTable(doc, {
       startY: 48,
       theme: 'grid',
@@ -108,32 +99,76 @@ export default function OperacionesDashboard() {
         ['CUIT', op.cuit || 'No especificado'],
         ['Domicilio Operativo', op.domicilio || 'No especificado'],
         ['Mercadería', op.producto],
-        ['Posición NCM (IA)', op.posicion_ncm],
-        ['Valor FOB Estimado', `USD ${op.fob.toLocaleString()}`],
+        ['Posición NCM', op.posicion_ncm],
+        ['Valor FOB Declarado', `USD ${op.fob.toLocaleString()}`],
         ['Peso (Neto / Bruto)', `${op.peso_neto || 0} kg / ${op.peso_bruto || 0} kg`]
       ],
     });
 
     let currentY = (doc as any).lastAutoTable.finalY + 10;
 
-    // --- TABLA 2: ESTIMACIÓN DE COSTOS (¡LA NUEVA MAGIA!) ---
     if (op.fob > 0) {
       doc.setFontSize(14);
       doc.setTextColor(15, 23, 42);
       doc.text('Estimación de Costos y Tributos (Referencial)', 14, currentY);
 
-      // Cálculos automáticos promediados
-      const seguroFlete = op.fob * 0.05; // 5% estimado de flete y seguro
-      const cif = op.fob + seguroFlete;
-      const derechos = cif * 0.16; // 16% promedio de Derechos de Importación
-      const tasaEst = cif * 0.03; // 3% Tasa de Estadística
-      const baseIva = cif + derechos + tasaEst;
-      const iva = baseIva * 0.21;
-      const ivaAdic = baseIva * 0.20;
-      const ganancias = baseIva * 0.06;
-      const iibb = baseIva * 0.025;
-      const totalTributos = derechos + tasaEst + iva + ivaAdic + ganancias + iibb;
-      const honorarios = Math.max(cif * 0.01, 250); // 1% del CIF o Mínimo de USD 250
+      // 🧠 MOTOR INTELIGENTE DE HONORARIOS
+      let honorariosCalculados = 0;
+      if (op.honorarios > 0) {
+        if (op.tipo_honorario === 'porcentaje') {
+           honorariosCalculados = op.fob * (op.honorarios / 100);
+        } else {
+           honorariosCalculados = Number(op.honorarios);
+        }
+      } else {
+        honorariosCalculados = Math.max(op.fob * 0.01, 250); 
+      }
+
+      let tablaBody = [];
+      
+      if (op.tipo === 'Exportación') {
+        const derechosExpo = op.fob * 0.045;
+        // Motor inteligente de flete expo
+        const gastosTerminal = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : 300; 
+        const totalCostosExpo = derechosExpo + honorariosCalculados + gastosTerminal;
+        const reintegro = op.fob * 0.03;
+
+        tablaBody = [
+          ['Valor FOB Declarado', `USD ${op.fob.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Derechos de Exportación (Est. 4.5%)', `USD ${derechosExpo.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Gastos de Terminal y Logística', `USD ${gastosTerminal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Honorarios Profesionales Despachante', `USD ${honorariosCalculados.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['', ''], 
+          ['TOTAL ESTIMADO A PAGAR', `USD ${totalCostosExpo.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Beneficio: Reintegros de Expo (Est. 3%)', `+ USD ${reintegro.toLocaleString('en-US', {minimumFractionDigits: 2})}`]
+        ];
+      } else {
+        // Motor inteligente de flete impo
+        const seguroFlete = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : (op.fob * 0.05);
+        const cif = op.fob + seguroFlete;
+        const derechos = cif * 0.16; 
+        const tasaEst = cif * 0.03; 
+        const baseIva = cif + derechos + tasaEst;
+        const iva = baseIva * 0.21;
+        const ivaAdic = baseIva * 0.20;
+        const ganancias = baseIva * 0.06;
+        const iibb = baseIva * 0.025;
+        const totalTributos = derechos + tasaEst + iva + ivaAdic + ganancias + iibb;
+        const totalOperacion = cif + totalTributos + honorariosCalculados;
+
+        tablaBody = [
+          ['Valor FOB de la Mercadería', `USD ${op.fob.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Flete Internacional y Seguro', `USD ${seguroFlete.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Base Imponible (Valor en Aduana / CIF)', `USD ${cif.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Derechos (Est. 16%) + Tasa Est. (3%)', `USD ${(derechos + tasaEst).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['IVA (21%) + IVA Adicional (20%)', `USD ${(iva + ivaAdic).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Anticipo Ganancias (6%) + IIBB (2.5%)', `USD ${(ganancias + iibb).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Total Tributos Aduaneros (Aprox.)', `USD ${totalTributos.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Honorarios Profesionales Despachante', `USD ${honorariosCalculados.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['', ''], 
+          ['TOTAL ESTIMADO DE LA OPERACIÓN', `USD ${totalOperacion.toLocaleString('en-US', {minimumFractionDigits: 2})}`]
+        ];
+      }
 
       autoTable(doc, {
         startY: currentY + 5,
@@ -143,39 +178,32 @@ export default function OperacionesDashboard() {
           0: { fontStyle: 'bold', textColor: [71, 85, 105] }, 
           1: { halign: 'right', textColor: [15, 23, 42] } 
         },
-        body: [
-          ['Valor FOB de la Mercadería', `USD ${op.fob.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['Flete Internacional y Seguro (Est. 5%)', `USD ${seguroFlete.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['Base Imponible (Valor en Aduana / CIF)', `USD ${cif.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['Derechos (Est. 16%) + Tasa Est. (3%)', `USD ${(derechos + tasaEst).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['IVA (21%) + IVA Adicional (20%)', `USD ${(iva + ivaAdic).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['Anticipo Ganancias (6%) + IIBB (2.5%)', `USD ${(ganancias + iibb).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['Total Tributos Aduaneros (Aprox.)', `USD ${totalTributos.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['Honorarios Profesionales Despachante', `USD ${honorarios.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-          ['', ''], // Fila vacía separadora
-          ['TOTAL ESTIMADO DE LA OPERACIÓN', `USD ${(cif + totalTributos + honorarios).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`]
-        ],
-        // Pintamos de gris clarito la fila del TOTAL para que destaque
+        body: tablaBody,
         didParseCell: function(data) {
-          if (data.row.index === 9) {
+          const indexTotal = op.tipo === 'Exportación' ? 5 : 9;
+          const indexReintegro = 6;
+          
+          if (data.row.index === indexTotal) {
             data.cell.styles.fontStyle = 'bold';
             data.cell.styles.fillColor = [241, 245, 249];
+          }
+          if (op.tipo === 'Exportación' && data.row.index === indexReintegro) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.textColor = [22, 101, 52]; 
           }
         }
       });
 
       currentY = (doc as any).lastAutoTable.finalY + 8;
       
-      // Nota legal (Salvacontingencias)
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
       doc.text('*Nota: Los valores expresados son estimaciones referenciales basadas en alícuotas generales.', 14, currentY);
-      doc.text('La liquidación tributaria exacta se realizará mediante el Sistema Informático Malvina (SIM) al oficializar.', 14, currentY + 4);
+      doc.text('La liquidación tributaria exacta se realizará mediante el Sistema Informático Malvina (SIM).', 14, currentY + 4);
       
       currentY += 15;
     }
 
-    // --- TABLA 3: CHECKLIST LOGÍSTICO ---
     doc.setFontSize(14);
     doc.setTextColor(15, 23, 42);
     doc.text('Estado de Documentación Logística:', 14, currentY);
@@ -204,14 +232,12 @@ export default function OperacionesDashboard() {
       ],
     });
 
-    // --- PIE DE PÁGINA ---
     const pageHeight = doc.internal.pageSize.height;
     doc.setFontSize(9);
     doc.setTextColor(150, 150, 150);
     doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, pageHeight - 15);
     doc.text(`Proforma ID: ${shortId}`, 14, pageHeight - 10);
 
-    // Guardar el archivo
     doc.save(`Resumen_${op.cliente}_${shortId}.pdf`);
   }
 
@@ -247,7 +273,7 @@ export default function OperacionesDashboard() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-900 text-white">
-                    <th className="p-4 font-bold text-sm">Fecha</th> {/* 👈 Limpiamos el título */}
+                    <th className="p-4 font-bold text-sm">Fecha</th>
                     <th className="p-4 font-bold text-sm">Cliente</th>
                     <th className="p-4 font-bold text-sm">Operación</th>
                     <th className="p-4 font-bold text-sm">Mercadería</th>
@@ -259,7 +285,6 @@ export default function OperacionesDashboard() {
                   {operaciones.map((op) => (
                     <tr key={op.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">
-                        {/* 👈 Sacamos el ID feo y dejamos solo la fecha destacada */}
                         <div className="font-bold text-slate-700 bg-slate-100 inline-block px-3 py-1 rounded-lg">
                           {new Date(op.created_at).toLocaleDateString('es-AR')}
                         </div>
@@ -285,10 +310,14 @@ export default function OperacionesDashboard() {
                       <td className="p-4">
                         <div className="flex flex-col items-start">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                            op.estado === 'Finalizado' ? 'bg-green-100 text-green-800' : 
-                            op.estado === 'En Curso' ? 'bg-amber-100 text-amber-800' : 
-                            'bg-slate-100 text-slate-800'
+                            op.estado === 'Aprobada / Oficializada' || op.estado === 'Finalizado' ? 'bg-green-100 text-green-800 border border-green-200' : 
+                            op.estado === 'Con Observaciones' ? 'bg-red-100 text-red-800 border border-red-200' : 
+                            op.estado === 'En Curso' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 
+                            'bg-slate-100 text-slate-800 border border-slate-200'
                           }`}>
+                            {op.estado === 'Aprobada / Oficializada' ? '✅ ' : 
+                             op.estado === 'Con Observaciones' ? '🚨 ' : 
+                             op.estado === 'En Curso' ? '🔵 ' : '🟡 '}
                             {op.estado}
                           </span>
                           {calcularAlerta(op.fecha_vencimiento)}
