@@ -1,28 +1,53 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 export default function Home() {
+  const [usuarioLogueado, setUsuarioLogueado] = useState(false)
+
+  // 🛑 EL PATOVICA VIRTUAL: Chequea si el usuario tiene la "pulsera VIP"
+  useEffect(() => {
+    const chequearSesion = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUsuarioLogueado(!!session)
+    }
+    chequearSesion()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUsuarioLogueado(!!session)
+    })
+
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
+
+  // 🛣️ RUTAS INTELIGENTES: Si está logueado pasa, si no, a la fila del Login.
+  const rutaPrincipal = usuarioLogueado ? "/operaciones" : "/login"
+  const rutaCalculadora = usuarioLogueado ? "/calculadora" : "/login"
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-purple-200">
       
       {/* BARRA DE NAVEGACIÓN PÚBLICA PULIDA ✨ */}
       <nav className="absolute top-0 w-full z-50 px-6 py-6 md:px-12 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-slate-100/20">
-        {/* EL LOGO: Ahora está limpio, solo el texto profesional CARRIZO Comex */}
         <div className="flex items-center gap-2">
           <span className="text-xl font-extrabold text-slate-900 tracking-tight">CARRIZO <span className="text-purple-600 font-medium">Comex</span></span>
         </div>
         
-        {/* EL BOTÓN ÚNICO: Sin superposiciones ruidosas. Una sola llamada a la acción. */}
+        {/* EL BOTÓN ÚNICO INTELIGENTE */}
         <Link 
-          href="/login" 
+          href={rutaPrincipal} 
           className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-full transition-all shadow-md text-sm whitespace-nowrap"
         >
-          Ingresar al Sistema →
+          {usuarioLogueado ? 'Ir al Dashboard →' : 'Ingresar al Sistema →'}
         </Link>
       </nav>
 
       {/* SECCIÓN PRINCIPAL (HERO) */}
       <main className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 lg:px-8 overflow-hidden">
-        {/* Círculos decorativos de fondo */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob"></div>
         <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-emerald-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob animation-delay-2000"></div>
 
@@ -48,13 +73,13 @@ export default function Home() {
           
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
             <Link 
-              href="/operaciones" 
+              href={rutaPrincipal} 
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-purple-600/30 transition-all text-lg flex items-center justify-center gap-2"
             >
               🚀 Comenzar ahora
             </Link>
             <Link 
-              href="/calculadora" 
+              href={rutaCalculadora} 
               className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-bold py-4 px-8 rounded-full shadow-sm transition-all text-lg flex items-center justify-center gap-2"
             >
               🧮 Probar Calculadora
