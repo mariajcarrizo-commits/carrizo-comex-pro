@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import { ncmComunes } from '@/lib/ncmData'
 import { supabase } from '../../../lib/supabase'
 
+// ✨ BASE DE DATOS DE PRUEBA DE CUITs (Simulación AFIP)
+const padronCuitPrueba: { [key: string]: string } = {
+  "30123456789": "MAJOSHKA S.A.",
+  "20987654321": "CARRIZO COMEX Freelance",
+  "33555666778": "GLOBAL LOGISTICS ARG SRL",
+};
+
 const paisesMundo = [
   "Alemania", "Angola", "Arabia Saudita", "Argelia", "Argentina", "Australia", "Austria",
   "Bélgica", "Bolivia", "Brasil", "Bulgaria", "Canadá", "Chile", "China", "Colombia",
@@ -21,14 +28,19 @@ const paisesMundo = [
 export default function NuevaOperacion() {
   const [analisisIA, setAnalisisIA] = useState('');
   const [paso, setPaso] = useState(1)
-  const [planUsuario, setPlanUsuario] = useState('freelance') // 👈 NUEVO: Memoria del plan
+  const [planUsuario, setPlanUsuario] = useState('freelance')
   
+  // 🔄 ESTADO DEL FORMULARIO ACTUALIZADO
   const [formData, setFormData] = useState({
     tipo: '',
     clienteNombre: '',
     clienteCuit: '',
     emailCliente: '', 
     productoDescripcion: '',
+    // ✨ NUEVOS CAMPOS DE MUESTRA
+    esMuestra: 'No', // 'Si' o 'No'
+    muestraTipoValor: 'Sin Valor', // 'Con Valor' o 'Sin Valor'
+    
     pais: '',
     ncm: '',
     esPeligroso: 'No',
@@ -42,26 +54,22 @@ export default function NuevaOperacion() {
     tipo_honorario: 'fijo', 
     gastos_logisticos: '',
     docs: {
-      afip: false,
-      malvina: false,
-      factura: false,
-      packing: false,
-      origen: false,
-      tecnicas: false,
-      transporte: false
+      afip: false, malvina: false, factura: false, packing: false,
+      origen: false, tecnicas: false, transporte: false
     }
   })
 
   const [busquedaNcm, setBusquedaNcm] = useState('')
   const [mostrarSelectorNcm, setMostrarSelectorNcm] = useState(false)
   const [iaCargando, setIaCargando] = useState(false)
+  const [cuitCargando, setCuitCargando] = useState(false); // 👈 Nuevo estado de carga
 
-  // 🛑 NUEVO: BUSCAR EL PLAN DEL USUARIO AL ENTRAR
+  // Obtener el plan del usuario al entrar
   useEffect(() => {
     const obtenerPlan = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.email) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('perfiles')
           .select('plan_suscripcion')
           .eq('email', user.email)
@@ -75,8 +83,35 @@ export default function NuevaOperacion() {
     obtenerPlan()
   }, [])
 
+  // 🕵️‍♀️ ✨ FUNCIÓN MÁGICA: BUSCAR CUIT (SIMULADO)
+  useEffect(() => {
+    const limpiarCuit = formData.clienteCuit.replace(/-/g, '').trim();
+    
+    if (limpiarCuit.length === 11) {
+      setCuitCargando(true);
+      // Simulamos una demora de red de 1 segundo
+      setTimeout(() => {
+        const razonSocialEncontrada = padronCuitPrueba[limpiarCuit];
+        if (razonSocialEncontrada) {
+          setFormData(prev => ({ ...prev, clienteNombre: razonSocialEncontrada }));
+        } else {
+          // Si no está en nuestra base de prueba, limpiamos por seguridad
+          setFormData(prev => ({ ...prev, clienteNombre: '' }));
+        }
+        setCuitCargando(false);
+      }, 1000);
+    }
+  }, [formData.clienteCuit]); // Se ejecuta cada vez que cambia el CUIT
+
   const handleChange = (e: any) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target;
+    
+    // 🔥 Lógica especial si cambia "esMuestra" a "No"
+    if (name === 'esMuestra' && value === 'No') {
+      setFormData(prev => ({ ...prev, esMuestra: value, muestraTipoValor: 'Sin Valor' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   }
 
   const handleDocChange = (docName: string) => {
@@ -136,6 +171,11 @@ export default function NuevaOperacion() {
       email_cliente: formData.emailCliente.toLowerCase(),
       email_creador: emailCreador, 
       producto: formData.productoDescripcion,
+      
+      // ✨ GUARDAR DATOS DE MUESTRA
+      es_muestra: formData.esMuestra,
+      muestra_tipo_valor: formData.esMuestra === 'Si' ? formData.muestraTipoValor : null,
+
       pais: formData.pais,
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
@@ -158,6 +198,7 @@ export default function NuevaOperacion() {
       docs_transporte: formData.docs.transporte
     }
 
+    // 🛑 ATENCIÓN: Tenemos que agregar estas columnas ('es_muestra' y 'muestra_tipo_valor') en Supabase después.
     const { error } = await supabase.from('operaciones').insert([nuevaOperacion])
 
     if (error) {
@@ -215,13 +256,20 @@ export default function NuevaOperacion() {
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Datos del Cliente</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ✨ CUIT MÁGICO PRIMERO */}
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    CUIT
+                    {cuitCargando && <span className="text-xs animate-spin">⚙️</span>}
+                  </label>
+                  <input type="text" name="clienteCuit" value={formData.clienteCuit} onChange={handleChange} placeholder="Ej: 30123456789" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none" />
+                  <p className="text-xs text-slate-500 mt-1">Ingresá 11 dígitos para autocompletar.</p>
+                </div>
+
+                {/* RAZÓN SOCIAL DESPUÉS */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
-                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Ej: MAJOSHKA" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
-                </div>
-                <div className="md:col-span-1">
-                  <label className="block text-sm font-bold text-slate-700 mb-2">CUIT</label>
-                  <input type="text" name="clienteCuit" value={formData.clienteCuit} onChange={handleChange} placeholder="Ej: 30-12345678-9" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Se completará solo..." className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
                 </div>
                 
                 <div className="md:col-span-2 pt-2">
@@ -230,7 +278,7 @@ export default function NuevaOperacion() {
                     <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">Para acceso al Portal</span>
                   </label>
                   <input type="email" name="emailCliente" value={formData.emailCliente} onChange={handleChange} placeholder="majoshka@empresa.com" className="w-full px-4 py-3 border border-purple-200 bg-purple-50 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none placeholder-purple-300" />
-                  <p className="text-xs text-slate-500 mt-1 italic">Con este correo tu cliente podrá iniciar sesión en su propio panel de seguimiento.</p>
+                  <p className="text-xs text-slate-500 mt-1 italic">Con este correo tu cliente podrá iniciar sesión en su propio panel.</p>
                 </div>
               </div>
             </div>
@@ -243,6 +291,36 @@ export default function NuevaOperacion() {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
                   <textarea name="productoDescripcion" value={formData.productoDescripcion} onChange={handleChange} placeholder="Ej: Aditivos químicos industriales..." rows={2} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                </div>
+
+                {/* ✨ NUEVA SECCIÓN DE MUESTRAS FLEXIBLE */}
+                <div className="bg-purple-50 p-5 rounded-xl border border-purple-100 space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <label className="text-purple-950 font-extrabold text-sm flex items-center gap-2">
+                      <span className="text-xl">🎁</span> ¿La mercadería es una Muestra?
+                    </label>
+                    <div className="flex gap-4">
+                      {['No', 'Si'].map(opcion => (
+                        <label key={opcion} className={`flex items-center gap-2 font-bold px-4 py-2 rounded-full border cursor-pointer transition-all ${formData.esMuestra === opcion ? 'bg-purple-600 text-white border-purple-700 shadow-md' : 'bg-white text-purple-700 border-purple-200 hover:border-purple-300'}`}>
+                          <input type="radio" name="esMuestra" value={opcion} checked={formData.esMuestra === opcion} onChange={handleChange} className="hidden"/> {opcion}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Lógica condicional: Solo se muestra si eligieron 'Si' */}
+                  {formData.esMuestra === 'Si' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-purple-100 flex items-center justify-between gap-4">
+                      <label className="text-purple-800 font-bold text-sm italic">De ser muestra, especificar valor:</label>
+                      <div className="flex gap-3">
+                        {['Sin Valor', 'Con Valor'].map(valorOp => (
+                          <label key={valorOp} className={`flex items-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${formData.muestraTipoValor === valorOp ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-white/50 text-purple-600 border-purple-100 hover:border-purple-200'}`}>
+                            <input type="radio" name="muestraTipoValor" value={valorOp} checked={formData.muestraTipoValor === valorOp} onChange={handleChange} className="accent-purple-600"/> {valorOp}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -268,46 +346,22 @@ export default function NuevaOperacion() {
                 <div className="col-span-1 md:col-span-3">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Honorarios del Despachante</label>
                   <div className="flex gap-2">
-                    <select
-                      name="tipo_honorario"
-                      value={formData.tipo_honorario}
-                      onChange={handleChange}
-                      className="w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50"
-                    >
+                    <select name="tipo_honorario" value={formData.tipo_honorario} onChange={handleChange} className="w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50">
                       <option value="fijo">Monto Fijo (USD)</option>
                       <option value="porcentaje">Porcentaje FOB (%)</option>
                     </select>
-                    <input
-                      type="number"
-                      name="honorarios"
-                      value={formData.honorarios}
-                      onChange={handleChange}
-                      placeholder={formData.tipo_honorario === 'fijo' ? "Ej: 350" : "Ej: 1.5"}
-                      className="w-2/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none"
-                    />
+                    <input type="number" name="honorarios" value={formData.honorarios} onChange={handleChange} placeholder={formData.tipo_honorario === 'fijo' ? "Ej: 350" : "Ej: 1.5"} className="w-2/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, el PDF calculará por defecto el 1% (Mínimo USD 250).</p>
+                  <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, se calculará automáticamente.</p>
                 </div>
 
-                <div className="col-span-1 md:col-span-3">
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Gastos Logísticos / Flete (USD)</label>
-                  <input 
-                    type="number" 
-                    name="gastos_logisticos" 
-                    value={formData.gastos_logisticos} 
-                    onChange={handleChange} 
-                    placeholder="Ej: 300" 
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" 
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, el PDF estimará un valor referencial por defecto.</p>
-                </div>
-
-                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <div className="flex items-center justify-between">
-                      <label className="text-slate-800 font-bold text-sm">¿Es carga peligrosa (IMO)?</label>
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 text-3xl opacity-20 rotate-12">⚠️</div>
+                    <div className="flex items-center justify-between relative z-10 gap-4">
+                      <label className="text-orange-950 font-bold text-sm flex items-center gap-2">¿Es carga peligrosa (IMO)?</label>
                       <div className="flex gap-4">
-                          <label className="flex items-center gap-2 font-bold text-slate-700 text-sm"><input type="radio" name="esPeligroso" value="Si" checked={formData.esPeligroso === 'Si'} onChange={handleChange} className="accent-orange-600"/> Sí</label>
-                          <label className="flex items-center gap-2 font-bold text-slate-700 text-sm"><input type="radio" name="esPeligroso" value="No" checked={formData.esPeligroso === 'No'} onChange={handleChange} className="accent-orange-600"/> No</label>
+                          <label className="flex items-center gap-2 font-bold text-orange-800 text-sm"><input type="radio" name="esPeligroso" value="Si" checked={formData.esPeligroso === 'Si'} onChange={handleChange} className="accent-orange-600"/> Sí</label>
+                          <label className="flex items-center gap-2 font-bold text-orange-800 text-sm"><input type="radio" name="esPeligroso" value="No" checked={formData.esPeligroso === 'No'} onChange={handleChange} className="accent-orange-600"/> No</label>
                       </div>
                   </div>
                 </div>
@@ -320,53 +374,24 @@ export default function NuevaOperacion() {
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
               <div className="space-y-6">
                 
-                {/* 🔒 BLOQUE DE SEGURIDAD IA DEPENDIENDO DEL PLAN */}
                 {planUsuario === 'freelance' ? (
                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center shadow-inner">
                     <div className="text-4xl mb-4">🔒</div>
                     <h3 className="text-lg font-bold text-slate-800 mb-2">IA Exclusiva para Planes Pro/Premium</h3>
-                    <p className="text-sm text-slate-600 mb-5 max-w-md mx-auto">
-                      Ahorrá horas de búsqueda en el nomenclador. Nuestro Agente Inteligente analiza tus productos y sugiere la NCM exacta al instante.
-                    </p>
-                    <button disabled className="bg-slate-200 text-slate-500 font-bold py-3 px-6 rounded-lg cursor-not-allowed w-full md:w-auto">
-                      Agente IA Bloqueado
-                    </button>
+                    <p className="text-sm text-slate-600 mb-5 max-w-md mx-auto"> Ahorrá horas de búsqueda. Nuestro Agente Inteligente sugiere la NCM exacta al instante.</p>
+                    <button disabled className="bg-slate-200 text-slate-500 font-bold py-3 px-6 rounded-lg cursor-not-allowed w-full md:w-auto"> Agente IA Bloqueado </button>
                   </div>
                 ) : (
                   <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-100 shadow-sm relative overflow-hidden">
                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
-                    
-                    <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2">
-                      ✨ Agente Aduanero Senior (IA)
-                    </h3>
-                    <p className="text-xs text-purple-700 mb-4 font-medium relative z-10">
-                      Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span>
-                    </p>
-                    
-                    <button
-                      type="button"
-                      onClick={sugerirNcmConIA}
-                      disabled={iaCargando || !formData.productoDescripcion}
-                      className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {iaCargando ? (
-                        <><span className="animate-spin text-xl">⚙️</span> Procesando normativa...</>
-                      ) : (
-                        <>Generar Análisis y Sugerir NCM</>
-                      )}
+                    <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2"> ✨ Agente Aduanero Senior (IA) </h3>
+                    <p className="text-xs text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
+                    <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50">
+                      {iaCargando ? <><span className="animate-spin text-xl">⚙️</span> Procesando...</> : <>Generar Análisis y Sugerir NCM</>}
                     </button>
-
                     {analisisIA && (
-                      <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
-                        {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
-                          if (parte.startsWith('***')) {
-                            return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
-                          }
-                          if (parte.startsWith('**')) {
-                            return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
-                          }
-                          return <span key={index}>{parte}</span>;
-                        })}
+                      <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm leading-relaxed shadow-inner">
+                        {analisisIA}
                       </div>
                     )}
                   </div>
@@ -375,22 +400,13 @@ export default function NuevaOperacion() {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Posición NCM Confirmada</label>
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      name="ncm" 
-                      value={formData.ncm} 
-                      onChange={handleChange} 
-                      placeholder="Ej: 9004.10.00" 
-                      className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500" 
-                    />
-                    <button type="button" onClick={() => setMostrarSelectorNcm(!mostrarSelectorNcm)} className="px-4 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-slate-200">
-                      🔍
-                    </button>
+                    <input type="text" name="ncm" value={formData.ncm} onChange={handleChange} placeholder="Ej: 9004.10.00" className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500" />
+                    <button type="button" onClick={() => setMostrarSelectorNcm(!mostrarSelectorNcm)} className="px-4 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-slate-200"> 🔍 </button>
                   </div>
                 
                   {mostrarSelectorNcm && (
                     <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50">
-                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar sugerencia..." className="w-full px-3 py-2 border rounded mb-2 text-slate-900 font-medium outline-none focus:ring-2 focus:ring-purple-400" />
+                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar..." className="w-full px-3 py-2 border rounded mb-2text-slate-900 font-medium" />
                       <div className="max-h-40 overflow-y-auto">
                         {ncmFiltrados.map((item) => (
                             <button key={item.codigo} type="button" onClick={() => seleccionarNcm(item.codigo, item.descripcion)} className="w-full text-left p-2 hover:bg-white text-sm border-b border-slate-100 text-slate-800">
@@ -408,35 +424,20 @@ export default function NuevaOperacion() {
           {paso === 5 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>
-              
               <div className="space-y-6">
-                
-                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
-                  <h3 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Datos Operativos</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 gap-4 grid grid-cols-1 md:grid-cols-2">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">Domicilio Fiscal / Operativo</label>
-                      <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
+                      <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">CBU (Para reintegros)</label>
-                      <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
+                      <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">Peso Neto (kg)</label>
-                      <input type="number" name="pesoNeto" value={formData.pesoNeto} onChange={handleChange} placeholder="0.00" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">Peso Bruto (kg)</label>
-                      <input type="number" name="pesoBruto" value={formData.pesoBruto} onChange={handleChange} placeholder="0.00" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none" />
-                    </div>
-                  </div>
                 </div>
 
                 <div>
                   <h3 className="text-sm font-extrabold text-slate-800 mb-3 uppercase tracking-wider">Checklist Documental</h3>
-                  <p className="text-xs text-slate-500 mb-4">Marcá los documentos que el cliente ya te entregó o gestionaste.</p>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[
                       { id: 'afip', label: 'Constancia AFIP/ARCA' },
@@ -444,27 +445,18 @@ export default function NuevaOperacion() {
                       { id: 'factura', label: 'Factura Comercial (USD)' },
                       { id: 'packing', label: 'Packing List' },
                       { id: 'origen', label: 'Certificado de Origen' },
-                      { id: 'tecnicas', label: 'Certificaciones Técnicas' },
                       { id: 'transporte', label: 'Carta Porte / CRT' },
                     ].map((doc) => (
                       <label key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${formData.docs[doc.id as keyof typeof formData.docs] ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                         <div className={`w-5 h-5 rounded flex items-center justify-center border ${formData.docs[doc.id as keyof typeof formData.docs] ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>
                            {formData.docs[doc.id as keyof typeof formData.docs] && <span className="text-white text-xs">✓</span>}
                         </div>
-                        <input 
-                          type="checkbox" 
-                          className="hidden" 
-                          checked={formData.docs[doc.id as keyof typeof formData.docs]}
-                          onChange={() => handleDocChange(doc.id)} 
-                        />
-                        <span className={`text-sm font-bold ${formData.docs[doc.id as keyof typeof formData.docs] ? 'text-green-800' : 'text-slate-700'}`}>
-                          {doc.label}
-                        </span>
+                        <input type="checkbox" className="hidden" checked={formData.docs[doc.id as keyof typeof formData.docs]} onChange={() => handleDocChange(doc.id)} />
+                        <span className={`text-sm font-bold ${formData.docs[doc.id as keyof typeof formData.docs] ? 'text-green-800' : 'text-slate-700'}`}> {doc.label} </span>
                       </label>
                     ))}
                   </div>
                 </div>
-
               </div>
             </div>
           )}
@@ -475,11 +467,11 @@ export default function NuevaOperacion() {
             ) : <div></div>}
 
             {paso < 5 ? (
-              <button onClick={siguientePaso} disabled={(paso === 1 && !formData.tipo)} className="px-8 py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 disabled:opacity-50 shadow-lg">
+              <button onClick={siguientePaso} disabled={(paso === 1 && !formData.tipo)} className="px-8 py-3 bg-slate-900 text-white rounded-lg font-bold disabled:opacity-50">
                 Siguiente →
               </button>
             ) : (
-              <button onClick={guardarOperacion} disabled={!formData.ncm} className="px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50 shadow-lg">
+              <button onClick={guardarOperacion} disabled={!formData.ncm} className="px-8 py-3 bg-green-600 text-white rounded-lg font-bold disabled:opacity-50">
                 ✓ Finalizar Operación
               </button>
             )}
