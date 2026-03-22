@@ -6,7 +6,7 @@ export const metadata = {
   title: 'CARRIZO Comex',
   description: 'Asistente Inteligente para Despachantes de Aduana',
   icons: {
-    icon: '/logo.jpg', 
+    icon: '/logo.jpg?v=2', // 👈 ESTA ES LA TRAMPA ANTI-MEMORIA
   },
 }
 
