@@ -6,13 +6,13 @@ import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const [usuarioLogueado, setUsuarioLogueado] = useState(false)
-  const [cargando, setCargando] = useState(true) // 👈 NUEVO: Estado de espera
+  const [cargando, setCargando] = useState(true) // 👈 El estado de espera
 
   useEffect(() => {
     const chequearSesion = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUsuarioLogueado(!!session)
-      setCargando(false) // 👈 Terminó de pensar
+      setCargando(false)
     }
     chequearSesion()
 
@@ -38,41 +38,12 @@ export default function Home() {
           <span className="text-xl font-extrabold text-slate-900 tracking-tight">CARRIZO <span className="text-purple-600 font-medium">Comex</span></span>
         </div>
         
-        {/* 🧠 EL BOTÓN AHORA ES INTELIGENTE Y PACIENTE */}
+        {/* BOTÓN INTELIGENTE */}
         <Link 
           href={rutaPrincipal} 
           className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-full transition-all shadow-md text-sm whitespace-nowrap"
         >
           {cargando ? 'Cargando...' : (usuarioLogueado ? 'Ir al Dashboard →' : 'Ingresar al Sistema →')}
-        </Link>
-      </nav>
-
-{/* ... EL RESTO DEL CÓDIGO SIGUE EXACTAMENTE IGUAL HACIA ABAJO ... */}
-
-    return () => {
-      authListener.subscription.unsubscribe()
-    }
-  }, [])
-
-  // 🛣️ RUTAS INTELIGENTES: Si está logueado pasa, si no, a la fila del Login.
-  const rutaPrincipal = usuarioLogueado ? "/operaciones" : "/login"
-  const rutaCalculadora = usuarioLogueado ? "/calculadora" : "/login"
-
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-purple-200">
-      
-      {/* BARRA DE NAVEGACIÓN PÚBLICA PULIDA ✨ */}
-      <nav className="absolute top-0 w-full z-50 px-6 py-6 md:px-12 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-slate-100/20">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">CARRIZO <span className="text-purple-600 font-medium">Comex</span></span>
-        </div>
-        
-        {/* EL BOTÓN ÚNICO INTELIGENTE */}
-        <Link 
-          href={rutaPrincipal} 
-          className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-full transition-all shadow-md text-sm whitespace-nowrap"
-        >
-          {usuarioLogueado ? 'Ir al Dashboard →' : 'Ingresar al Sistema →'}
         </Link>
       </nav>
 
