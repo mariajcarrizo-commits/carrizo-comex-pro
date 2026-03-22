@@ -30,17 +30,14 @@ export default function NuevaOperacion() {
   const [paso, setPaso] = useState(1)
   const [planUsuario, setPlanUsuario] = useState('freelance')
   
-  // 🔄 ESTADO DEL FORMULARIO ACTUALIZADO
   const [formData, setFormData] = useState({
     tipo: '',
     clienteNombre: '',
     clienteCuit: '',
     emailCliente: '', 
     productoDescripcion: '',
-    // ✨ NUEVOS CAMPOS DE MUESTRA
-    esMuestra: 'No', // 'Si' o 'No'
-    muestraTipoValor: 'Sin Valor', // 'Con Valor' o 'Sin Valor'
-    
+    esMuestra: 'No',
+    muestraTipoValor: 'Sin Valor',
     pais: '',
     ncm: '',
     esPeligroso: 'No',
@@ -62,9 +59,8 @@ export default function NuevaOperacion() {
   const [busquedaNcm, setBusquedaNcm] = useState('')
   const [mostrarSelectorNcm, setMostrarSelectorNcm] = useState(false)
   const [iaCargando, setIaCargando] = useState(false)
-  const [cuitCargando, setCuitCargando] = useState(false); // 👈 Nuevo estado de carga
+  const [cuitCargando, setCuitCargando] = useState(false); 
 
-  // Obtener el plan del usuario al entrar
   useEffect(() => {
     const obtenerPlan = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -83,30 +79,24 @@ export default function NuevaOperacion() {
     obtenerPlan()
   }, [])
 
-  // 🕵️‍♀️ ✨ FUNCIÓN MÁGICA: BUSCAR CUIT (SIMULADO)
   useEffect(() => {
     const limpiarCuit = formData.clienteCuit.replace(/-/g, '').trim();
-    
     if (limpiarCuit.length === 11) {
       setCuitCargando(true);
-      // Simulamos una demora de red de 1 segundo
       setTimeout(() => {
         const razonSocialEncontrada = padronCuitPrueba[limpiarCuit];
         if (razonSocialEncontrada) {
           setFormData(prev => ({ ...prev, clienteNombre: razonSocialEncontrada }));
         } else {
-          // Si no está en nuestra base de prueba, limpiamos por seguridad
           setFormData(prev => ({ ...prev, clienteNombre: '' }));
         }
         setCuitCargando(false);
       }, 1000);
     }
-  }, [formData.clienteCuit]); // Se ejecuta cada vez que cambia el CUIT
+  }, [formData.clienteCuit]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
-    
-    // 🔥 Lógica especial si cambia "esMuestra" a "No"
     if (name === 'esMuestra' && value === 'No') {
       setFormData(prev => ({ ...prev, esMuestra: value, muestraTipoValor: 'Sin Valor' }));
     } else {
@@ -171,11 +161,8 @@ export default function NuevaOperacion() {
       email_cliente: formData.emailCliente.toLowerCase(),
       email_creador: emailCreador, 
       producto: formData.productoDescripcion,
-      
-      // ✨ GUARDAR DATOS DE MUESTRA
       es_muestra: formData.esMuestra,
       muestra_tipo_valor: formData.esMuestra === 'Si' ? formData.muestraTipoValor : null,
-
       pais: formData.pais,
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
@@ -198,7 +185,6 @@ export default function NuevaOperacion() {
       docs_transporte: formData.docs.transporte
     }
 
-    // 🛑 ATENCIÓN: Tenemos que agregar estas columnas ('es_muestra' y 'muestra_tipo_valor') en Supabase después.
     const { error } = await supabase.from('operaciones').insert([nuevaOperacion])
 
     if (error) {
@@ -256,7 +242,6 @@ export default function NuevaOperacion() {
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Datos del Cliente</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* ✨ CUIT MÁGICO PRIMERO */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                     CUIT
@@ -266,10 +251,9 @@ export default function NuevaOperacion() {
                   <p className="text-xs text-slate-500 mt-1">Ingresá 11 dígitos para autocompletar.</p>
                 </div>
 
-                {/* RAZÓN SOCIAL DESPUÉS */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
-                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="MAJOSHKA" className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
+                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Se completará solo..." className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
                 </div>
                 
                 <div className="md:col-span-2 pt-2">
@@ -293,7 +277,6 @@ export default function NuevaOperacion() {
                   <textarea name="productoDescripcion" value={formData.productoDescripcion} onChange={handleChange} placeholder="Ej: Aditivos químicos industriales..." rows={2} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
 
-                {/* ✨ NUEVA SECCIÓN DE MUESTRAS FLEXIBLE */}
                 <div className="bg-purple-50 p-5 rounded-xl border border-purple-100 space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <label className="text-purple-950 font-extrabold text-sm flex items-center gap-2">
@@ -308,7 +291,6 @@ export default function NuevaOperacion() {
                     </div>
                   </div>
 
-                  {/* Lógica condicional: Solo se muestra si eligieron 'Si' */}
                   {formData.esMuestra === 'Si' && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-purple-100 flex items-center justify-between gap-4">
                       <label className="text-purple-800 font-bold text-sm italic">De ser muestra, especificar valor:</label>
@@ -386,7 +368,7 @@ export default function NuevaOperacion() {
                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
                     <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2"> ✨ Agente Aduanero Senior (IA) </h3>
                     <p className="text-xs text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
-                    <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50">
+                    <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition-all shadow-md">
                       {iaCargando ? <><span className="animate-spin text-xl">⚙️</span> Procesando...</> : <>Generar Análisis y Sugerir NCM</>}
                     </button>
                     {analisisIA && (
@@ -402,6 +384,8 @@ export default function NuevaOperacion() {
                         })}
                       </div>
                     )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Posición NCM Confirmada</label>
@@ -412,7 +396,7 @@ export default function NuevaOperacion() {
                 
                   {mostrarSelectorNcm && (
                     <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50">
-                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar..." className="w-full px-3 py-2 border rounded mb-2text-slate-900 font-medium" />
+                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar..." className="w-full px-3 py-2 border rounded mb-2 text-slate-900 font-medium" />
                       <div className="max-h-40 overflow-y-auto">
                         {ncmFiltrados.map((item) => (
                             <button key={item.codigo} type="button" onClick={() => seleccionarNcm(item.codigo, item.descripcion)} className="w-full text-left p-2 hover:bg-white text-sm border-b border-slate-100 text-slate-800">
@@ -434,11 +418,11 @@ export default function NuevaOperacion() {
                 <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 gap-4 grid grid-cols-1 md:grid-cols-2">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">Domicilio Fiscal / Operativo</label>
-                      <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                      <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">CBU (Para reintegros)</label>
-                      <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                      <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
                     </div>
                 </div>
 
