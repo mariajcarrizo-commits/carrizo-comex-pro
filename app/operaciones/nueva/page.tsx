@@ -390,12 +390,18 @@ export default function NuevaOperacion() {
                       {iaCargando ? <><span className="animate-spin text-xl">⚙️</span> Procesando...</> : <>Generar Análisis y Sugerir NCM</>}
                     </button>
                     {analisisIA && (
-                      <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm leading-relaxed shadow-inner">
-                        {analisisIA}
+                      <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
+                        {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
+                          if (parte.startsWith('***')) {
+                            return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
+                          }
+                          if (parte.startsWith('**')) {
+                            return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
+                          }
+                          return <span key={index}>{parte}</span>;
+                        })}
                       </div>
                     )}
-                  </div>
-                )}
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Posición NCM Confirmada</label>
