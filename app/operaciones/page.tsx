@@ -17,10 +17,23 @@ export default function OperacionesDashboard() {
 
     if (!emailUsuario) {
       console.error("No hay usuario logueado")
-      setCargando(false)
+      window.location.href = '/login'
       return
     }
 
+    // 🛑 NUEVO: PATOVICA DE ROLES (Expulsa a los clientes de la zona de Despachantes)
+    const { data: perfil } = await supabase
+      .from('perfiles')
+      .select('rol_usuario')
+      .eq('email', emailUsuario)
+      .single()
+
+    if (perfil?.rol_usuario === 'cliente') {
+      window.location.href = '/dashboard' // Lo manda directo a su Portal de Seguimiento
+      return
+    }
+
+    // Si es Admin, busca SUS operaciones (Caja Fuerte)
     const { data, error } = await supabase
       .from('operaciones')
       .select('*')
