@@ -1,49 +1,21 @@
-'use client'
-
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
 
 export default function Home() {
-  const [usuarioLogueado, setUsuarioLogueado] = useState(false)
-  const [cargando, setCargando] = useState(true) // 👈 El estado de espera
-
-  useEffect(() => {
-    const chequearSesion = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUsuarioLogueado(!!session)
-      setCargando(false)
-    }
-    chequearSesion()
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUsuarioLogueado(!!session)
-      setCargando(false)
-    })
-
-    return () => {
-      authListener.subscription.unsubscribe()
-    }
-  }, [])
-
-  const rutaPrincipal = usuarioLogueado ? "/operaciones" : "/login"
-  const rutaCalculadora = usuarioLogueado ? "/calculadora" : "/login"
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-purple-200">
       
-      {/* BARRA DE NAVEGACIÓN PÚBLICA */}
+      {/* BARRA DE NAVEGACIÓN PÚBLICA ESTÁTICA */}
       <nav className="absolute top-0 w-full z-50 px-6 py-6 md:px-12 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-slate-100/20">
         <div className="flex items-center gap-2">
           <span className="text-xl font-extrabold text-slate-900 tracking-tight">CARRIZO <span className="text-purple-600 font-medium">Comex</span></span>
         </div>
         
-        {/* BOTÓN INTELIGENTE */}
+        {/* BOTÓN ESTÁTICO: SIEMPRE PIDE LOGIN */}
         <Link 
-          href={rutaPrincipal} 
+          href="/login" 
           className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-full transition-all shadow-md text-sm whitespace-nowrap"
         >
-          {cargando ? 'Cargando...' : (usuarioLogueado ? 'Ir al Dashboard →' : 'Ingresar al Sistema →')}
+          Ingresar al Sistema →
         </Link>
       </nav>
 
@@ -74,13 +46,13 @@ export default function Home() {
           
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
             <Link 
-              href={rutaPrincipal} 
+              href="/login" 
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-purple-600/30 transition-all text-lg flex items-center justify-center gap-2"
             >
               🚀 Comenzar ahora
             </Link>
             <Link 
-              href={rutaCalculadora} 
+              href="/login" 
               className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-bold py-4 px-8 rounded-full shadow-sm transition-all text-lg flex items-center justify-center gap-2"
             >
               🧮 Probar Calculadora
