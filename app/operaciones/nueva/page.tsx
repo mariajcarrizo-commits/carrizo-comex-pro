@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ncmComunes } from '@/lib/ncmData'
 import { supabase } from '../../../lib/supabase'
 
-// ✨ BASE DE DATOS DE PRUEBA DE CUITs (Simulación AFIP)
+// ✨ BASE DE DATOS DE PRUEBA DE CUITs
 const padronCuitPrueba: { [key: string]: string } = {
   "30123456789": "MAJOSHKA S.A.",
   "20987654321": "CARRIZO COMEX Freelance",
@@ -36,8 +36,12 @@ export default function NuevaOperacion() {
     clienteCuit: '',
     emailCliente: '', 
     productoDescripcion: '',
+    
+    // ✨ VARIABLES DE MUESTRA ACTUALIZADAS
     esMuestra: 'No',
     muestraTipoValor: 'Sin Valor',
+    muestraMonto: '', // 👈 NUEVO: Para guardar los USD de la muestra
+    
     pais: '',
     ncm: '',
     esPeligroso: 'No',
@@ -97,9 +101,16 @@ export default function NuevaOperacion() {
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
+    
+    // 🧠 Lógica inteligente: Si dice que NO es muestra, reseteamos todo lo demás.
     if (name === 'esMuestra' && value === 'No') {
-      setFormData(prev => ({ ...prev, esMuestra: value, muestraTipoValor: 'Sin Valor' }));
-    } else {
+      setFormData(prev => ({ ...prev, esMuestra: value, muestraTipoValor: 'Sin Valor', muestraMonto: '' }));
+    } 
+    // Si cambia a "Sin Valor", borramos el monto que haya escrito antes
+    else if (name === 'muestraTipoValor' && value === 'Sin Valor') {
+      setFormData(prev => ({ ...prev, muestraTipoValor: value, muestraMonto: '' }));
+    } 
+    else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   }
@@ -161,8 +172,12 @@ export default function NuevaOperacion() {
       email_cliente: formData.emailCliente.toLowerCase(),
       email_creador: emailCreador, 
       producto: formData.productoDescripcion,
+      
+      // ✨ GUARDAMOS TODA LA INFO DE LA MUESTRA
       es_muestra: formData.esMuestra,
       muestra_tipo_valor: formData.esMuestra === 'Si' ? formData.muestraTipoValor : null,
+      muestra_monto: formData.esMuestra === 'Si' && formData.muestraTipoValor === 'Con Valor' ? parseFloat(formData.muestraMonto) || 0 : 0,
+
       pais: formData.pais,
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
@@ -253,7 +268,7 @@ export default function NuevaOperacion() {
 
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
-                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="MAJOSHKA" className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
+                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Se completará solo..." className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
                 </div>
                 
                 <div className="md:col-span-2 pt-2">
@@ -277,6 +292,7 @@ export default function NuevaOperacion() {
                   <textarea name="productoDescripcion" value={formData.productoDescripcion} onChange={handleChange} placeholder="Ej: Aditivos químicos industriales..." rows={2} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
 
+                {/* ✨ SECCIÓN MUESTRAS SUPER MEJORADA */}
                 <div className="bg-purple-50 p-5 rounded-xl border border-purple-100 space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <label className="text-purple-950 font-extrabold text-sm flex items-center gap-2">
@@ -292,15 +308,34 @@ export default function NuevaOperacion() {
                   </div>
 
                   {formData.esMuestra === 'Si' && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-purple-100 flex items-center justify-between gap-4">
-                      <label className="text-purple-800 font-bold text-sm italic">De ser muestra, especificar valor:</label>
-                      <div className="flex gap-3">
-                        {['Sin Valor', 'Con Valor'].map(valorOp => (
-                          <label key={valorOp} className={`flex items-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${formData.muestraTipoValor === valorOp ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-white/50 text-purple-600 border-purple-100 hover:border-purple-200'}`}>
-                            <input type="radio" name="muestraTipoValor" value={valorOp} checked={formData.muestraTipoValor === valorOp} onChange={handleChange} className="accent-purple-600"/> {valorOp}
-                          </label>
-                        ))}
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-purple-100 flex flex-col gap-3">
+                      
+                      <div className="flex items-center justify-between gap-4">
+                        <label className="text-purple-800 font-bold text-sm italic">De ser muestra, especificar valor:</label>
+                        <div className="flex gap-3">
+                          {['Sin Valor', 'Con Valor'].map(valorOp => (
+                            <label key={valorOp} className={`flex items-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${formData.muestraTipoValor === valorOp ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-white/50 text-purple-600 border-purple-100 hover:border-purple-200'}`}>
+                              <input type="radio" name="muestraTipoValor" value={valorOp} checked={formData.muestraTipoValor === valorOp} onChange={handleChange} className="accent-purple-600"/> {valorOp}
+                            </label>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* ✨ EL NUEVO CAMPO DE MONTO */}
+                      {formData.muestraTipoValor === 'Con Valor' && (
+                        <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2">
+                          <label className="text-xs font-bold text-purple-800">Monto Declarado (USD):</label>
+                          <input 
+                            type="number" 
+                            name="muestraMonto" 
+                            value={formData.muestraMonto} 
+                            onChange={handleChange} 
+                            placeholder="Ej: 50.00" 
+                            className="w-32 px-3 py-1.5 text-sm border border-purple-200 rounded-md focus:ring-2 focus:ring-purple-500 outline-none font-bold text-slate-800 bg-white"
+                          />
+                        </div>
+                      )}
+
                     </div>
                   )}
                 </div>
