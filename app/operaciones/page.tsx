@@ -21,7 +21,6 @@ export default function OperacionesDashboard() {
       return
     }
 
-    // 🛑 NUEVO: PATOVICA DE ROLES (Expulsa a los clientes de la zona de Despachantes)
     const { data: perfil } = await supabase
       .from('perfiles')
       .select('rol_usuario')
@@ -29,11 +28,10 @@ export default function OperacionesDashboard() {
       .single()
 
     if (perfil?.rol_usuario === 'cliente') {
-      window.location.href = '/dashboard' // Lo manda directo a su Portal de Seguimiento
+      window.location.href = '/dashboard'
       return
     }
 
-    // Si es Admin, busca SUS operaciones (Caja Fuerte)
     const { data, error } = await supabase
       .from('operaciones')
       .select('*')
@@ -61,11 +59,9 @@ export default function OperacionesDashboard() {
 
   const calcularAlerta = (fechaVencimiento: string | null) => {
     if (!fechaVencimiento) return null;
-
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0); 
     const vencimiento = new Date(fechaVencimiento);
-    
     const diferenciaMs = vencimiento.getTime() - hoy.getTime();
     const diasFaltantes = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
 
@@ -103,6 +99,13 @@ export default function OperacionesDashboard() {
     doc.setTextColor(15, 23, 42);
     doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
+    // 🧠 MOTOR INTELIGENTE: Definir el Valor Base
+    const fobReal = Number(op.fob) || 0;
+    const montoMuestra = Number(op.muestra_monto) || 0;
+    
+    // Si el FOB es 0 pero la muestra tiene valor, usamos el valor de la muestra
+    const valorBase = fobReal > 0 ? fobReal : montoMuestra;
+
     autoTable(doc, {
       startY: 48,
       theme: 'grid',
@@ -110,44 +113,43 @@ export default function OperacionesDashboard() {
       body: [
         ['Cliente / Razón Social', op.cliente],
         ['CUIT', op.cuit || 'No especificado'],
-        ['Domicilio Operativo', op.domicilio || 'No especificado'],
         ['Mercadería', op.producto],
         ['Posición NCM', op.posicion_ncm],
-        ['Valor FOB Declarado', `USD ${op.fob.toLocaleString()}`],
+        // ✨ LÍNEA MÁGICA DE MUESTRA EN EL PDF
+        ['¿Es Muestra?', op.es_muestra === 'Si' ? `Sí (${op.muestra_tipo_valor}${montoMuestra > 0 ? ` - USD ${montoMuestra}` : ''})` : 'No'],
+        ['Valor FOB / Base Declarado', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
         ['Peso (Neto / Bruto)', `${op.peso_neto || 0} kg / ${op.peso_bruto || 0} kg`]
       ],
     });
 
     let currentY = (doc as any).lastAutoTable.finalY + 10;
 
-    if (op.fob > 0) {
+    if (valorBase > 0) {
       doc.setFontSize(14);
       doc.setTextColor(15, 23, 42);
       doc.text('Estimación de Costos y Tributos (Referencial)', 14, currentY);
 
-      // 🧠 MOTOR INTELIGENTE DE HONORARIOS
       let honorariosCalculados = 0;
       if (op.honorarios > 0) {
         if (op.tipo_honorario === 'porcentaje') {
-           honorariosCalculados = op.fob * (op.honorarios / 100);
+           honorariosCalculados = valorBase * (op.honorarios / 100);
         } else {
            honorariosCalculados = Number(op.honorarios);
         }
       } else {
-        honorariosCalculados = Math.max(op.fob * 0.01, 250); 
+        honorariosCalculados = Math.max(valorBase * 0.01, 250); 
       }
 
       let tablaBody = [];
       
       if (op.tipo === 'Exportación') {
-        const derechosExpo = op.fob * 0.045;
-        // Motor inteligente de flete expo
+        const derechosExpo = valorBase * 0.045;
         const gastosTerminal = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : 300; 
         const totalCostosExpo = derechosExpo + honorariosCalculados + gastosTerminal;
-        const reintegro = op.fob * 0.03;
+        const reintegro = valorBase * 0.03;
 
         tablaBody = [
-          ['Valor FOB Declarado', `USD ${op.fob.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Valor Base Declarado', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Derechos de Exportación (Est. 4.5%)', `USD ${derechosExpo.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Gastos de Terminal y Logística', `USD ${gastosTerminal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Honorarios Profesionales Despachante', `USD ${honorariosCalculados.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
@@ -156,9 +158,8 @@ export default function OperacionesDashboard() {
           ['Beneficio: Reintegros de Expo (Est. 3%)', `+ USD ${reintegro.toLocaleString('en-US', {minimumFractionDigits: 2})}`]
         ];
       } else {
-        // Motor inteligente de flete impo
-        const seguroFlete = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : (op.fob * 0.05);
-        const cif = op.fob + seguroFlete;
+        const seguroFlete = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : (valorBase * 0.05);
+        const cif = valorBase + seguroFlete;
         const derechos = cif * 0.16; 
         const tasaEst = cif * 0.03; 
         const baseIva = cif + derechos + tasaEst;
@@ -170,7 +171,7 @@ export default function OperacionesDashboard() {
         const totalOperacion = cif + totalTributos + honorariosCalculados;
 
         tablaBody = [
-          ['Valor FOB de la Mercadería', `USD ${op.fob.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Valor Base de la Mercadería', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Flete Internacional y Seguro', `USD ${seguroFlete.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Base Imponible (Valor en Aduana / CIF)', `USD ${cif.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Derechos (Est. 16%) + Tasa Est. (3%)', `USD ${(derechos + tasaEst).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
@@ -195,7 +196,6 @@ export default function OperacionesDashboard() {
         didParseCell: function(data) {
           const indexTotal = op.tipo === 'Exportación' ? 5 : 9;
           const indexReintegro = 6;
-          
           if (data.row.index === indexTotal) {
             data.cell.styles.fontStyle = 'bold';
             data.cell.styles.fillColor = [241, 245, 249];
@@ -213,7 +213,6 @@ export default function OperacionesDashboard() {
       doc.setTextColor(150, 150, 150);
       doc.text('*Nota: Los valores expresados son estimaciones referenciales basadas en alícuotas generales.', 14, currentY);
       doc.text('La liquidación tributaria exacta se realizará mediante el Sistema Informático Malvina (SIM).', 14, currentY + 4);
-      
       currentY += 15;
     }
 
@@ -260,8 +259,8 @@ export default function OperacionesDashboard() {
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Dashboard Operativo</h1>
-            <p className="text-slate-600 font-medium">Panel de control y gestión de despachos</p>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Panel Operativo</h1>
+            <p className="text-slate-600 font-medium">Gestión de despachos y proformas</p>
           </div>
           
           <Link href="/operaciones/nueva" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2">
@@ -339,7 +338,6 @@ export default function OperacionesDashboard() {
                       <td className="p-4">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => generarPDF(op)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Descargar Proforma PDF">📄</button>
-                          <Link href={`/operaciones/editar/${op.id}`} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all flex items-center justify-center" title="Editar Operación">✏️</Link>
                           <button onClick={() => eliminarOperacion(op.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">🗑️</button>
                         </div>
                       </td>

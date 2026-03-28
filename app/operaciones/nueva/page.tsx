@@ -263,12 +263,12 @@ export default function NuevaOperacion() {
                     {cuitCargando && <span className="text-xs animate-spin">⚙️</span>}
                   </label>
                   <input type="text" name="clienteCuit" value={formData.clienteCuit} onChange={handleChange} placeholder="Ej: 30123456789" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none" />
-                  <p className="text-xs text-slate-500 mt-1">Ingresá 11 dígitos para autocompletar.</p>
+                  <p className="text-xs text-slate-500 mt-1">Ingresá 11 dígitos.</p>
                 </div>
 
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
-                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="Se completará solo..." className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
+                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="MAJOSHKA" className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
                 </div>
                 
                 <div className="md:col-span-2 pt-2">
@@ -505,4 +505,4 @@ export default function NuevaOperacion() {
       </div>
     </div>
   )
-}
+}git
