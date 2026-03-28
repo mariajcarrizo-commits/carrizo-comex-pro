@@ -99,11 +99,10 @@ export default function OperacionesDashboard() {
     doc.setTextColor(15, 23, 42);
     doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
-    // 🧠 MOTOR INTELIGENTE CORREGIDO: Sumamos FOB + Muestra
+    // 🧠 MOTOR INTELIGENTE: Sumamos FOB + Muestra correctamente
     const fobReal = Number(op.fob) || 0;
     const montoMuestra = (op.es_muestra === 'Si' && op.muestra_tipo_valor === 'Con Valor') ? (Number(op.muestra_monto) || 0) : 0;
     
-    // El valor base imponible es la suma de ambos
     const valorBase = fobReal + montoMuestra;
 
     autoTable(doc, {
@@ -116,7 +115,7 @@ export default function OperacionesDashboard() {
         ['Mercadería', op.producto],
         ['Posición NCM', op.posicion_ncm],
         ['¿Es Muestra?', op.es_muestra === 'Si' ? `Sí (${op.muestra_tipo_valor}${montoMuestra > 0 ? ` - USD ${montoMuestra}` : ''})` : 'No'],
-        ['Valor FOB / Base Declarado', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+        ['Valor Total Declarado (FOB + Muestra)', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
         ['Peso (Neto / Bruto)', `${op.peso_neto || 0} kg / ${op.peso_bruto || 0} kg`]
       ],
     });
@@ -335,7 +334,7 @@ export default function OperacionesDashboard() {
                         </div>
                       </td>
                       <td className="p-4">
-                        {/* ✨ ¡VOLVIÓ EL LÁPIZ DE EDITAR! */}
+                        {/* ✨ ¡VOLVIÓ EL LÁPIZ DE EDITAR Y ESTÁ ACOMPAÑADO! */}
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => generarPDF(op)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Descargar Proforma PDF">📄</button>
                           <Link href={`/operaciones/editar/${op.id}`} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all flex items-center justify-center" title="Editar Operación">✏️</Link>
