@@ -36,12 +36,9 @@ export default function NuevaOperacion() {
     clienteCuit: '',
     emailCliente: '', 
     productoDescripcion: '',
-    
-    // ✨ VARIABLES DE MUESTRA ACTUALIZADAS
     esMuestra: 'No',
     muestraTipoValor: 'Sin Valor',
-    muestraMonto: '', // 👈 NUEVO: Para guardar los USD de la muestra
-    
+    muestraMonto: '', 
     pais: '',
     ncm: '',
     esPeligroso: 'No',
@@ -91,8 +88,6 @@ export default function NuevaOperacion() {
         const razonSocialEncontrada = padronCuitPrueba[limpiarCuit];
         if (razonSocialEncontrada) {
           setFormData(prev => ({ ...prev, clienteNombre: razonSocialEncontrada }));
-        } else {
-          setFormData(prev => ({ ...prev, clienteNombre: '' }));
         }
         setCuitCargando(false);
       }, 1000);
@@ -101,16 +96,11 @@ export default function NuevaOperacion() {
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
-    
-    // 🧠 Lógica inteligente: Si dice que NO es muestra, reseteamos todo lo demás.
     if (name === 'esMuestra' && value === 'No') {
       setFormData(prev => ({ ...prev, esMuestra: value, muestraTipoValor: 'Sin Valor', muestraMonto: '' }));
-    } 
-    // Si cambia a "Sin Valor", borramos el monto que haya escrito antes
-    else if (name === 'muestraTipoValor' && value === 'Sin Valor') {
+    } else if (name === 'muestraTipoValor' && value === 'Sin Valor') {
       setFormData(prev => ({ ...prev, muestraTipoValor: value, muestraMonto: '' }));
-    } 
-    else {
+    } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   }
@@ -172,12 +162,9 @@ export default function NuevaOperacion() {
       email_cliente: formData.emailCliente.toLowerCase(),
       email_creador: emailCreador, 
       producto: formData.productoDescripcion,
-      
-      // ✨ GUARDAMOS TODA LA INFO DE LA MUESTRA
       es_muestra: formData.esMuestra,
       muestra_tipo_valor: formData.esMuestra === 'Si' ? formData.muestraTipoValor : null,
       muestra_monto: formData.esMuestra === 'Si' && formData.muestraTipoValor === 'Con Valor' ? parseFloat(formData.muestraMonto) || 0 : 0,
-
       pais: formData.pais,
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
@@ -263,12 +250,20 @@ export default function NuevaOperacion() {
                     {cuitCargando && <span className="text-xs animate-spin">⚙️</span>}
                   </label>
                   <input type="text" name="clienteCuit" value={formData.clienteCuit} onChange={handleChange} placeholder="Ej: 30123456789" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none" />
-                  <p className="text-xs text-slate-500 mt-1">Ingresá 11 dígitos.</p>
+                  <p className="text-xs text-slate-500 mt-1">Ingresá los 11 dígitos sin guiones.</p>
                 </div>
 
+                {/* ✨ CAMPO RAZÓN SOCIAL NORMALIZADO */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
-                  <input type="text" name="clienteNombre" value={formData.clienteNombre} onChange={handleChange} placeholder="MAJOSHKA" className={`w-full px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none ${formData.clienteNombre ? 'text-green-900 bg-green-50 border-green-200 font-bold' : 'text-slate-900'}`} />
+                  <input 
+                    type="text" 
+                    name="clienteNombre" 
+                    value={formData.clienteNombre} 
+                    onChange={handleChange} 
+                    placeholder="Ej: MAJOSHKA" 
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none placeholder:font-medium placeholder:text-slate-400" 
+                  />
                 </div>
                 
                 <div className="md:col-span-2 pt-2">
@@ -292,7 +287,6 @@ export default function NuevaOperacion() {
                   <textarea name="productoDescripcion" value={formData.productoDescripcion} onChange={handleChange} placeholder="Ej: Aditivos químicos industriales..." rows={2} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                 </div>
 
-                {/* ✨ SECCIÓN MUESTRAS SUPER MEJORADA */}
                 <div className="bg-purple-50 p-5 rounded-xl border border-purple-100 space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <label className="text-purple-950 font-extrabold text-sm flex items-center gap-2">
@@ -309,7 +303,6 @@ export default function NuevaOperacion() {
 
                   {formData.esMuestra === 'Si' && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-purple-100 flex flex-col gap-3">
-                      
                       <div className="flex items-center justify-between gap-4">
                         <label className="text-purple-800 font-bold text-sm italic">De ser muestra, especificar valor:</label>
                         <div className="flex gap-3">
@@ -321,7 +314,6 @@ export default function NuevaOperacion() {
                         </div>
                       </div>
 
-                      {/* ✨ EL NUEVO CAMPO DE MONTO */}
                       {formData.muestraTipoValor === 'Con Valor' && (
                         <div className="flex items-center justify-end gap-2 animate-in fade-in slide-in-from-right-2">
                           <label className="text-xs font-bold text-purple-800">Monto Declarado (USD):</label>
@@ -335,7 +327,6 @@ export default function NuevaOperacion() {
                           />
                         </div>
                       )}
-
                     </div>
                   )}
                 </div>
@@ -505,4 +496,4 @@ export default function NuevaOperacion() {
       </div>
     </div>
   )
-}git
+}
