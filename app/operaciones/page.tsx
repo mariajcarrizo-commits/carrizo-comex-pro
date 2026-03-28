@@ -99,12 +99,12 @@ export default function OperacionesDashboard() {
     doc.setTextColor(15, 23, 42);
     doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
-    // 🧠 MOTOR INTELIGENTE: Definir el Valor Base
+    // 🧠 MOTOR INTELIGENTE CORREGIDO: Sumamos FOB + Muestra
     const fobReal = Number(op.fob) || 0;
-    const montoMuestra = Number(op.muestra_monto) || 0;
+    const montoMuestra = (op.es_muestra === 'Si' && op.muestra_tipo_valor === 'Con Valor') ? (Number(op.muestra_monto) || 0) : 0;
     
-    // Si el FOB es 0 pero la muestra tiene valor, usamos el valor de la muestra
-    const valorBase = fobReal > 0 ? fobReal : montoMuestra;
+    // El valor base imponible es la suma de ambos
+    const valorBase = fobReal + montoMuestra;
 
     autoTable(doc, {
       startY: 48,
@@ -115,7 +115,6 @@ export default function OperacionesDashboard() {
         ['CUIT', op.cuit || 'No especificado'],
         ['Mercadería', op.producto],
         ['Posición NCM', op.posicion_ncm],
-        // ✨ LÍNEA MÁGICA DE MUESTRA EN EL PDF
         ['¿Es Muestra?', op.es_muestra === 'Si' ? `Sí (${op.muestra_tipo_valor}${montoMuestra > 0 ? ` - USD ${montoMuestra}` : ''})` : 'No'],
         ['Valor FOB / Base Declarado', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
         ['Peso (Neto / Bruto)', `${op.peso_neto || 0} kg / ${op.peso_bruto || 0} kg`]
@@ -149,7 +148,7 @@ export default function OperacionesDashboard() {
         const reintegro = valorBase * 0.03;
 
         tablaBody = [
-          ['Valor Base Declarado', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Valor Base Declarado (FOB + Muestra)', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Derechos de Exportación (Est. 4.5%)', `USD ${derechosExpo.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Gastos de Terminal y Logística', `USD ${gastosTerminal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Honorarios Profesionales Despachante', `USD ${honorariosCalculados.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
@@ -171,7 +170,7 @@ export default function OperacionesDashboard() {
         const totalOperacion = cif + totalTributos + honorariosCalculados;
 
         tablaBody = [
-          ['Valor Base de la Mercadería', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
+          ['Valor Base Declarado (FOB + Muestra)', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Flete Internacional y Seguro', `USD ${seguroFlete.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Base Imponible (Valor en Aduana / CIF)', `USD ${cif.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
           ['Derechos (Est. 16%) + Tasa Est. (3%)', `USD ${(derechos + tasaEst).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
@@ -336,8 +335,10 @@ export default function OperacionesDashboard() {
                         </div>
                       </td>
                       <td className="p-4">
+                        {/* ✨ ¡VOLVIÓ EL LÁPIZ DE EDITAR! */}
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => generarPDF(op)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Descargar Proforma PDF">📄</button>
+                          <Link href={`/operaciones/editar/${op.id}`} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all flex items-center justify-center" title="Editar Operación">✏️</Link>
                           <button onClick={() => eliminarOperacion(op.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">🗑️</button>
                         </div>
                       </td>
