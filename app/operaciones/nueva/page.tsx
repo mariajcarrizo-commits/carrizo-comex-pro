@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { ncmComunes } from '@/lib/ncmData'
 import { supabase } from '../../../lib/supabase'
 
-// ✨ BASE DE DATOS DE PRUEBA DE CUITs
 const padronCuitPrueba: { [key: string]: string } = {
   "30123456789": "MAJOSHKA S.A.",
   "20987654321": "CARRIZO COMEX Freelance",
@@ -46,8 +45,8 @@ export default function NuevaOperacion() {
     fechaVencimiento: '', 
     domicilio: '',
     cbu: '',
-    pesoNeto: '',
-    pesoBruto: '',
+    pesoNeto: '', // 👈 ACÁ ESTÁN EN LA MEMORIA
+    pesoBruto: '', // 👈 ACÁ ESTÁN EN LA MEMORIA
     honorarios: '', 
     tipo_honorario: 'fijo', 
     gastos_logisticos: '',
@@ -253,7 +252,6 @@ export default function NuevaOperacion() {
                   <p className="text-xs text-slate-500 mt-1">Ingresá los 11 dígitos sin guiones.</p>
                 </div>
 
-                {/* ✨ CAMPO RAZÓN SOCIAL NORMALIZADO */}
                 <div className="md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nombre / Razón Social</label>
                   <input 
@@ -261,7 +259,7 @@ export default function NuevaOperacion() {
                     name="clienteNombre" 
                     value={formData.clienteNombre} 
                     onChange={handleChange} 
-                    placeholder="Ej: MAJOSHKA" 
+                    placeholder="Ej: MAJOSHKA S.A." 
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none placeholder:font-medium placeholder:text-slate-400" 
                   />
                 </div>
@@ -441,7 +439,23 @@ export default function NuevaOperacion() {
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>
               <div className="space-y-6">
+                
+                {/* ✨ ACÁ VUELVEN A ESTAR LOS KILOS, SÚPER VISIBLES */}
                 <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 gap-4 grid grid-cols-1 md:grid-cols-2">
+                    <div className="md:col-span-2 border-b border-slate-200 pb-4 mb-2">
+                      <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3">Datos de la Carga</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Peso Neto (Kg)</label>
+                          <input type="number" name="pesoNeto" value={formData.pesoNeto} onChange={handleChange} placeholder="Ej: 1500" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-1">Peso Bruto (Kg)</label>
+                          <input type="number" name="pesoBruto" value={formData.pesoBruto} onChange={handleChange} placeholder="Ej: 1550" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-bold text-slate-500 mb-1">Domicilio Fiscal / Operativo</label>
                       <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
