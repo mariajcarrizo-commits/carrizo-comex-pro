@@ -5,12 +5,10 @@ import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
 export default function Dashboard() {
-  // 🧠 ESTADOS INTELIGENTES
   const [rolUsuario, setRolUsuario] = useState('admin')
   const [emailUser, setEmailUser] = useState('')
   const [operacionesCliente, setOperacionesCliente] = useState<any[]>([])
 
-  // Estados del Despachante
   const [metricas, setMetricas] = useState({
     total: 0, fobTotal: 0, pendientes: 0, importaciones: 0, exportaciones: 0
   })
@@ -19,7 +17,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const cargarDatos = async () => {
-      // 1. Validar quién entró
       const { data: { user } } = await supabase.auth.getUser()
       if (!user?.email) {
          window.location.href = '/login'
@@ -27,7 +24,6 @@ export default function Dashboard() {
       }
       setEmailUser(user.email)
 
-      // 2. Buscar su Pase VIP (Rol)
       const { data: perfil } = await supabase
         .from('perfiles')
         .select('rol_usuario')
@@ -37,14 +33,11 @@ export default function Dashboard() {
       const rol = perfil?.rol_usuario || 'admin'
       setRolUsuario(rol)
 
-      // 3. EL CANDADO DE MÁXIMA SEGURIDAD 🔐
       let query = supabase.from('operaciones').select('*').order('created_at', { ascending: false })
 
       if (rol === 'cliente') {
-         // El cliente SOLO puede ver las cargas donde él es el dueño
          query = query.eq('email_cliente', user.email)
       } else {
-         // El despachante SOLO puede ver las cargas que él gestiona
          query = query.eq('email_creador', user.email)
       }
 
@@ -56,7 +49,6 @@ export default function Dashboard() {
         if (rol === 'cliente') {
             setOperacionesCliente(data)
         } else {
-            // Matemática exclusiva para el Despachante
             const fobSum = data.reduce((acc, op) => acc + (Number(op.fob) || 0), 0)
             const pend = data.filter(op => op.estado === 'Pendiente').length
             const impos = data.filter(op => op.tipo === 'Importación').length
@@ -90,7 +82,6 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-slate-50 p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
-          
           <div className="bg-gradient-to-r from-slate-900 to-purple-900 rounded-2xl p-8 mb-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
              <div>
                 <h1 className="text-3xl font-extrabold mb-1">Portal de Seguimiento</h1>
@@ -116,22 +107,24 @@ export default function Dashboard() {
                     <table className="w-full text-left">
                       <thead>
                         <tr className="bg-white text-slate-500 text-sm border-b border-slate-200">
-                          <th className="p-4 font-bold uppercase tracking-wider">Referencia / Mercadería</th>
-                          <th className="p-4 font-bold uppercase tracking-wider">Tipo</th>
-                          <th className="p-4 font-bold uppercase tracking-wider">Origen/Destino</th>
+                          <th className="p-4 font-bold uppercase tracking-wider">Ref / Fecha</th>
+                          <th className="p-4 font-bold uppercase tracking-wider">Mercadería</th>
                           <th className="p-4 font-bold uppercase tracking-wider text-right">Estado Actual</th>
                         </tr>
                       </thead>
                       <tbody>
                         {operacionesCliente.map((op) => (
                            <tr key={op.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                             <td className="p-4 font-bold text-slate-900">{op.producto}</td>
                              <td className="p-4">
-                                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                                   {op.tipo}
-                                 </span>
+                                <div className="font-bold text-slate-900">#OP-{op.id.substring(0,6).toUpperCase()}</div>
+                                <div className="text-xs text-slate-500 mt-1">{new Date(op.created_at).toLocaleDateString('es-AR')}</div>
                              </td>
-                             <td className="p-4 text-slate-600 font-medium">{op.pais}</td>
+                             <td className="p-4">
+                                 <span className={`inline-block mb-1 px-2.5 py-0.5 rounded-md text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                   {op.tipo} ({op.pais})
+                                 </span>
+                                 <div className="font-medium text-slate-800">{op.producto}</div>
+                             </td>
                              <td className="p-4 text-right">
                                  <span className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 shadow-sm">
                                    {op.estado}
@@ -155,10 +148,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Dashboard Operativo</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Dashboard Analítico</h1>
             <p className="text-slate-600">Resumen general de tu operatoria en tiempo real</p>
           </div>
           <Link href="/operaciones/nueva" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2">
@@ -167,14 +159,12 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500 hover:shadow-md transition-all">
             <p className="text-sm font-bold text-slate-500 mb-1">Total Operaciones</p>
             <div className="flex items-end gap-2">
               <h2 className="text-4xl font-extrabold text-slate-900">{metricas.total}</h2>
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500 hover:shadow-md transition-all">
             <p className="text-sm font-bold text-slate-500 mb-1">Volumen FOB Declarado</p>
             <div className="flex items-end gap-2">
@@ -183,14 +173,12 @@ export default function Dashboard() {
               </h2>
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 hover:shadow-md transition-all">
             <p className="text-sm font-bold text-slate-500 mb-1">Despachos Pendientes</p>
             <div className="flex items-end gap-2">
               <h2 className="text-4xl font-extrabold text-slate-900">{metricas.pendientes}</h2>
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-green-500 hover:shadow-md transition-all">
             <p className="text-sm font-bold text-slate-500 mb-1">Distribución</p>
             <div className="flex flex-col mt-1">
@@ -204,7 +192,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -212,7 +199,6 @@ export default function Dashboard() {
             <h3 className="text-lg font-bold text-slate-800">Actividad Reciente</h3>
             <Link href="/operaciones" className="text-sm font-bold text-purple-600 hover:text-purple-800">Ver panel completo →</Link>
           </div>
-          
           {operacionesRecientes.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
               Aún no hay operaciones registradas.
@@ -250,7 +236,6 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   )
