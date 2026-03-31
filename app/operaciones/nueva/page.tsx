@@ -38,15 +38,19 @@ export default function NuevaOperacion() {
     esMuestra: 'No',
     muestraTipoValor: 'Sin Valor',
     muestraMonto: '', 
-    pais: '',
+    
+    // ✨ REEMPLAZAMOS "PAIS" POR ORIGEN Y DESTINO
+    origen: '',
+    destino: '',
+    
     ncm: '',
     esPeligroso: 'No',
     fobEstimado: '',
     fechaVencimiento: '', 
     domicilio: '',
     cbu: '',
-    pesoNeto: '', // 👈 ACÁ ESTÁN EN LA MEMORIA
-    pesoBruto: '', // 👈 ACÁ ESTÁN EN LA MEMORIA
+    pesoNeto: '', 
+    pesoBruto: '', 
     honorarios: '', 
     tipo_honorario: 'fijo', 
     gastos_logisticos: '',
@@ -154,6 +158,9 @@ export default function NuevaOperacion() {
     const { data: { user } } = await supabase.auth.getUser()
     const emailCreador = user?.email || 'desconocido'
 
+    // ✨ EL TRUCO MÁGICO: Unimos origen y destino con una flecha para guardarlo en la BD
+    const rutaCompleta = `${formData.origen || 'No ind.'} ➔ ${formData.destino || 'No ind.'}`
+
     const nuevaOperacion = {
       tipo: formData.tipo,
       cliente: formData.clienteNombre,
@@ -164,7 +171,9 @@ export default function NuevaOperacion() {
       es_muestra: formData.esMuestra,
       muestra_tipo_valor: formData.esMuestra === 'Si' ? formData.muestraTipoValor : null,
       muestra_monto: formData.esMuestra === 'Si' && formData.muestraTipoValor === 'Con Valor' ? parseFloat(formData.muestraMonto) || 0 : 0,
-      pais: formData.pais,
+      
+      pais: rutaCompleta, // Lo guardamos en el cajón que ya existía
+
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
       fob: parseFloat(formData.fobEstimado) || 0,
@@ -329,19 +338,27 @@ export default function NuevaOperacion() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-1">
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Origen / Destino</label>
-                    <select name="pais" value={formData.pais} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium bg-white">
-                      <option value="">Seleccionar país...</option>
+                {/* ✨ GRILLA SEPARADA: ORIGEN, DESTINO, FOB Y VENCIMIENTO */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">País de Origen</label>
+                    <select name="origen" value={formData.origen} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium bg-white">
+                      <option value="">Seleccionar...</option>
                       {paisesMundo.map((pais) => ( <option key={pais} value={pais}>{pais}</option> ))}
                     </select>
                   </div>
-                  <div className="md:col-span-1">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">País de Destino</label>
+                    <select name="destino" value={formData.destino} onChange={handleChange} className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium bg-white">
+                      <option value="">Seleccionar...</option>
+                      {paisesMundo.map((pais) => ( <option key={pais} value={pais}>{pais}</option> ))}
+                    </select>
+                  </div>
+                  <div>
                      <label className="block text-sm font-bold text-slate-700 mb-2">Valor FOB (USD)</label>
                      <input type="number" name="fobEstimado" value={formData.fobEstimado} onChange={handleChange} placeholder="0.00" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium" />
                   </div>
-                  <div className="md:col-span-1">
+                  <div>
                      <label className="block text-sm font-bold text-red-600 mb-2 flex items-center gap-1">
                        <span title="Alerta de Vencimiento">🚨 Vencimiento</span>
                      </label>
@@ -349,14 +366,15 @@ export default function NuevaOperacion() {
                   </div>
                 </div>
 
-                <div className="col-span-1 md:col-span-3">
+                <div className="col-span-1 md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Honorarios del Despachante</label>
-                  <div className="flex gap-2">
-                    <select name="tipo_honorario" value={formData.tipo_honorario} onChange={handleChange} className="w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50">
+                  {/* ✨ CAJITA RESPONSIVA PARA MÓVILES */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                    <select name="tipo_honorario" value={formData.tipo_honorario} onChange={handleChange} className="w-full sm:w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50">
                       <option value="fijo">Monto Fijo (USD)</option>
                       <option value="porcentaje">Porcentaje FOB (%)</option>
                     </select>
-                    <input type="number" name="honorarios" value={formData.honorarios} onChange={handleChange} placeholder={formData.tipo_honorario === 'fijo' ? "Ej: 350" : "Ej: 1.5"} className="w-2/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                    <input type="number" name="honorarios" value={formData.honorarios} onChange={handleChange} placeholder={formData.tipo_honorario === 'fijo' ? "Ej: 350" : "Ej: 1.5"} className="w-full sm:w-2/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
                   </div>
                   <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, se calculará automáticamente.</p>
                 </div>
@@ -440,7 +458,6 @@ export default function NuevaOperacion() {
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Documentación y Logística</h2>
               <div className="space-y-6">
                 
-                {/* ✨ ACÁ VUELVEN A ESTAR LOS KILOS, SÚPER VISIBLES */}
                 <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 gap-4 grid grid-cols-1 md:grid-cols-2">
                     <div className="md:col-span-2 border-b border-slate-200 pb-4 mb-2">
                       <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3">Datos de la Carga</h3>
