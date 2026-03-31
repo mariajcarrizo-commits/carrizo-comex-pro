@@ -99,7 +99,6 @@ export default function OperacionesDashboard() {
     doc.setTextColor(15, 23, 42);
     doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
-    // 🧠 MOTOR INTELIGENTE: Separando FOB y Muestra
     const fobReal = Number(op.fob) || 0;
     const montoMuestra = (op.es_muestra === 'Si' && op.muestra_tipo_valor === 'Con Valor') ? (Number(op.muestra_monto) || 0) : 0;
     const valorBase = fobReal + montoMuestra;
@@ -111,10 +110,11 @@ export default function OperacionesDashboard() {
       body: [
         ['Cliente / Razón Social', op.cliente],
         ['CUIT', op.cuit || 'No especificado'],
+        // ✨ NUEVA LÍNEA EN EL PDF: ORIGEN Y DESTINO
+        ['Origen / Destino', op.pais || 'No especificado'],
         ['Mercadería', op.producto],
         ['Posición NCM', op.posicion_ncm],
         ['¿Es Muestra?', op.es_muestra === 'Si' ? `Sí (${op.muestra_tipo_valor})` : 'No'],
-        // ✨ FILAS SEPARADAS PARA MAYOR CLARIDAD
         ['Valor FOB Declarado', `USD ${fobReal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
         ['Valor Muestra Declarada', `USD ${montoMuestra.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
         ['Base Imponible (FOB + Muestra)', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
@@ -195,7 +195,6 @@ export default function OperacionesDashboard() {
           1: { halign: 'right', textColor: [15, 23, 42] } 
         },
         body: tablaBody,
-        // ✨ CÓDIGO A PRUEBA DE BALAS PARA PINTAR TOTALES Y REINTEGROS
         didParseCell: function(data) {
           const contenidoFila = String(data.row.raw[0]);
           if (contenidoFila.includes('TOTAL ESTIMADO')) {
@@ -258,13 +257,11 @@ export default function OperacionesDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Panel Operativo</h1>
             <p className="text-slate-600 font-medium">Gestión de despachos y proformas</p>
           </div>
-          
           <Link href="/operaciones/nueva" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2">
             <span>+</span> Nueva Operación
           </Link>
@@ -308,9 +305,7 @@ export default function OperacionesDashboard() {
                         <div className="text-xs text-slate-500 mt-1">CUIT: {op.cuit}</div>
                       </td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'
-                        }`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
                           {op.tipo}
                         </span>
                         <div className="text-xs font-bold text-slate-600 mt-2">{op.pais}</div>
