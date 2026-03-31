@@ -38,11 +38,8 @@ export default function NuevaOperacion() {
     esMuestra: 'No',
     muestraTipoValor: 'Sin Valor',
     muestraMonto: '', 
-    
-    // ✨ REEMPLAZAMOS "PAIS" POR ORIGEN Y DESTINO
     origen: '',
     destino: '',
-    
     ncm: '',
     esPeligroso: 'No',
     fobEstimado: '',
@@ -158,7 +155,6 @@ export default function NuevaOperacion() {
     const { data: { user } } = await supabase.auth.getUser()
     const emailCreador = user?.email || 'desconocido'
 
-    // ✨ EL TRUCO MÁGICO: Unimos origen y destino con una flecha para guardarlo en la BD
     const rutaCompleta = `${formData.origen || 'No ind.'} ➔ ${formData.destino || 'No ind.'}`
 
     const nuevaOperacion = {
@@ -171,16 +167,14 @@ export default function NuevaOperacion() {
       es_muestra: formData.esMuestra,
       muestra_tipo_valor: formData.esMuestra === 'Si' ? formData.muestraTipoValor : null,
       muestra_monto: formData.esMuestra === 'Si' && formData.muestraTipoValor === 'Con Valor' ? parseFloat(formData.muestraMonto) || 0 : 0,
-      
-      pais: rutaCompleta, // Lo guardamos en el cajón que ya existía
-
+      pais: rutaCompleta,
       posicion_ncm: formData.ncm,
       es_peligroso: formData.esPeligroso,
       fob: parseFloat(formData.fobEstimado) || 0,
       estado: 'Pendiente',
       fecha_vencimiento: formData.fechaVencimiento ? formData.fechaVencimiento : null,
       domicilio: formData.domicilio,
-      cbu: formData.cbu,
+      cbu: formData.tipo === 'Importación' ? '' : formData.cbu, // Si es impo, no guardamos CBU
       honorarios: parseFloat(formData.honorarios) || 0,
       tipo_honorario: formData.tipo_honorario,
       gastos_logisticos: parseFloat(formData.gastos_logisticos) || 0,
@@ -338,7 +332,6 @@ export default function NuevaOperacion() {
                   )}
                 </div>
 
-                {/* ✨ GRILLA SEPARADA: ORIGEN, DESTINO, FOB Y VENCIMIENTO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">País de Origen</label>
@@ -368,7 +361,6 @@ export default function NuevaOperacion() {
 
                 <div className="col-span-1 md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Honorarios del Despachante</label>
-                  {/* ✨ CAJITA RESPONSIVA PARA MÓVILES */}
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                     <select name="tipo_honorario" value={formData.tipo_honorario} onChange={handleChange} className="w-full sm:w-1/3 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold focus:ring-2 focus:ring-purple-600 outline-none bg-slate-50">
                       <option value="fijo">Monto Fijo (USD)</option>
@@ -477,10 +469,19 @@ export default function NuevaOperacion() {
                       <label className="block text-xs font-bold text-slate-500 mb-1">Domicilio Fiscal / Operativo</label>
                       <input type="text" name="domicilio" value={formData.domicilio} onChange={handleChange} placeholder="Ej: Av. Belgrano 123, CABA" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">CBU (Para reintegros)</label>
-                      <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
-                    </div>
+
+                    {/* ✨ MAGIA CBU: Solo se activa si es Exportación */}
+                    {formData.tipo === 'Exportación' ? (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">CBU (Para reintegros Expo)</label>
+                        <input type="text" name="cbu" value={formData.cbu} onChange={handleChange} placeholder="22 dígitos" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900" />
+                      </div>
+                    ) : (
+                      <div className="opacity-60 pointer-events-none">
+                        <label className="block text-xs font-bold text-slate-400 mb-1">CBU</label>
+                        <input type="text" disabled placeholder="No aplica para Importación" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-400 bg-slate-50" />
+                      </div>
+                    )}
                 </div>
 
                 <div>
@@ -492,7 +493,8 @@ export default function NuevaOperacion() {
                       { id: 'factura', label: 'Factura Comercial (USD)' },
                       { id: 'packing', label: 'Packing List' },
                       { id: 'origen', label: 'Certificado de Origen' },
-                      { id: 'transporte', label: 'Carta Porte / CRT' },
+                      // ✨ ACÁ AGREGAMOS EL FAMOSO B/L
+                      { id: 'transporte', label: 'Doc. Transporte (B/L, AWB, CRT)' },
                     ].map((doc) => (
                       <label key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${formData.docs[doc.id as keyof typeof formData.docs] ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                         <div className={`w-5 h-5 rounded flex items-center justify-center border ${formData.docs[doc.id as keyof typeof formData.docs] ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>
