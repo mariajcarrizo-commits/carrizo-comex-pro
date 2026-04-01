@@ -25,7 +25,6 @@ export default function Dashboard() {
       }
       setEmailUser(user.email)
 
-      // ✨ ACÁ ESTÁ LA MAGIA: Traemos el rol y la empresa
       const { data: perfil } = await supabase
         .from('perfiles')
         .select('rol_usuario, empresa')
@@ -90,7 +89,6 @@ export default function Dashboard() {
                 <p className="text-purple-200">Bienvenido/a, <span className="font-bold text-white">{emailUser}</span></p>
              </div>
              <div className="bg-white/10 border border-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
-                {/* ✨ MOSTRANDO LA EMPRESA REAL EN LA VISTA DEL CLIENTE */}
                 <span className="text-sm text-purple-200">Operador:</span> <span className="font-bold">{nombreEmpresa}</span>
              </div>
           </div>
