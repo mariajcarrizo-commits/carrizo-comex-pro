@@ -385,41 +385,33 @@ export default function NuevaOperacion() {
             </div>
           )}
 
-          {paso === 4 && (
+{paso === 4 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
               <div className="space-y-6">
                 
-                {planUsuario === 'freelance' ? (
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center shadow-inner">
-                    <div className="text-4xl mb-4">🔒</div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">IA Exclusiva para Planes Pro/Premium</h3>
-                    <p className="text-sm text-slate-600 mb-5 max-w-md mx-auto"> Ahorrá horas de búsqueda. Nuestro Agente Inteligente sugiere la NCM exacta al instante.</p>
-                    <button disabled className="bg-slate-200 text-slate-500 font-bold py-3 px-6 rounded-lg cursor-not-allowed w-full md:w-auto"> Agente IA Bloqueado </button>
-                  </div>
-                ) : (
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-100 shadow-sm relative overflow-hidden">
-                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
-                    <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2"> ✨ Agente Aduanero Senior (IA) </h3>
-                    <p className="text-xs text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
-                    <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition-all shadow-md">
-                      {iaCargando ? <><span className="animate-spin text-xl">⚙️</span> Procesando...</> : <>Generar Análisis y Sugerir NCM</>}
-                    </button>
-                    {analisisIA && (
-                      <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
-                        {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
-                          if (parte.startsWith('***')) {
-                            return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
-                          }
-                          if (parte.startsWith('**')) {
-                            return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
-                          }
-                          return <span key={index}>{parte}</span>;
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* ✨ IA DESBLOQUEADA PARA TODOS LOS USUARIOS ✨ */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-100 shadow-sm relative overflow-hidden">
+                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
+                  <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2"> ✨ Agente Aduanero Senior (IA) </h3>
+                  <p className="text-xs text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
+                  <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition-all shadow-md">
+                    {iaCargando ? <><span className="animate-spin text-xl">⚙️</span> Procesando...</> : <>Generar Análisis y Sugerir NCM</>}
+                  </button>
+                  {analisisIA && (
+                    <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
+                      {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
+                        if (parte.startsWith('***')) {
+                          return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
+                        }
+                        if (parte.startsWith('**')) {
+                          return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
+                        }
+                        return <span key={index}>{parte}</span>;
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Posición NCM Confirmada</label>
