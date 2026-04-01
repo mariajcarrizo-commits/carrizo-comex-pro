@@ -77,6 +77,7 @@ export default function Navbar() {
             <Link href="/dashboard" className={`text-sm font-bold transition-colors ${pathname === '/dashboard' ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Dashboard</Link>
             <Link href="/operaciones" className={`text-sm font-bold transition-colors ${pathname?.includes('/operaciones') ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Operaciones</Link>
             <Link href="/calculadora" className={`text-sm font-bold transition-colors ${pathname === '/calculadora' ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Calculadora</Link>
+            <Link href="/equipo" className={`text-sm font-bold transition-colors ${pathname === '/equipo' ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Mi Equipo</Link>
           </div>
 
           {/* PERFIL Y CERRAR SESIÓN (SOLO PC) */}
@@ -103,6 +104,7 @@ export default function Navbar() {
             <Link onClick={() => setMenuAbierto(false)} href="/dashboard" className={`text-lg font-bold flex items-center gap-2 ${pathname === '/dashboard' ? 'text-purple-400' : 'text-white'}`}>📊 Dashboard</Link>
             <Link onClick={() => setMenuAbierto(false)} href="/operaciones" className={`text-lg font-bold flex items-center gap-2 ${pathname?.includes('/operaciones') ? 'text-purple-400' : 'text-white'}`}>📦 Operaciones</Link>
             <Link onClick={() => setMenuAbierto(false)} href="/calculadora" className={`text-lg font-bold flex items-center gap-2 ${pathname === '/calculadora' ? 'text-purple-400' : 'text-white'}`}>🧮 Calculadora</Link>
+            <Link onClick={() => setMenuAbierto(false)} href="/equipo" className={`text-lg font-bold flex items-center gap-2 ${pathname === '/equipo' ? 'text-purple-400' : 'text-white'}`}>👥 Mi Equipo</Link>
             
             <div className="pt-4 mt-2 border-t border-slate-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">
