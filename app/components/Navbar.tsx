@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../../lib/supabase'
 
 export default function Navbar() {
   const router = useRouter()
@@ -44,14 +44,13 @@ export default function Navbar() {
       }
     }
     cargarUsuario()
-  }, [pathname]) // Se vuelve a ejecutar si cambia de página por seguridad
+  }, [pathname])
 
   const handleCerrarSesion = async () => {
     await supabase.auth.signOut()
     router.push('/login')
   }
 
-  // Ocultamos la barra si estamos en la pantalla de Login
   if (pathname === '/login') return null
 
   return (
