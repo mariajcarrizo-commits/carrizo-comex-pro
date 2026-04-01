@@ -79,9 +79,9 @@ export default function Dashboard() {
     )
   }
 
-  if (rolUsuario === 'cliente') {
-    return (
-      <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      {rolUsuario === 'cliente' ? (
         <div className="max-w-5xl mx-auto">
           <div className="bg-gradient-to-r from-slate-900 to-purple-900 rounded-2xl p-8 mb-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
              <div>
@@ -139,102 +139,98 @@ export default function Dashboard() {
               </div>
           )}
         </div>
-      </div>
-    )
-  }
+      ) : (
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Dashboard Analítico</h1>
+              <p className="text-slate-600">Resumen general de tu operatoria en tiempo real</p>
+            </div>
+            <Link href="/operaciones/nueva" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2">
+              <span>+</span> Nueva Operación
+            </Link>
+          </div>
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Dashboard Analítico</h1>
-            <p className="text-slate-600">Resumen general de tu operatoria en tiempo real</p>
-          </div>
-          <Link href="/operaciones/nueva" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2">
-            <span>+</span> Nueva Operación
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500 hover:shadow-md transition-all">
-            <p className="text-sm font-bold text-slate-500 mb-1">Total Operaciones</p>
-            <div className="flex items-end gap-2">
-              <h2 className="text-4xl font-extrabold text-slate-900">{metricas.total}</h2>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500 hover:shadow-md transition-all">
-            <p className="text-sm font-bold text-slate-500 mb-1">Volumen FOB Declarado</p>
-            <div className="flex items-end gap-2">
-              <h2 className="text-2xl font-extrabold text-slate-900">
-                U$S {metricas.fobTotal.toLocaleString('es-AR')}
-              </h2>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 hover:shadow-md transition-all">
-            <p className="text-sm font-bold text-slate-500 mb-1">Despachos Pendientes</p>
-            <div className="flex items-end gap-2">
-              <h2 className="text-4xl font-extrabold text-slate-900">{metricas.pendientes}</h2>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-green-500 hover:shadow-md transition-all">
-            <p className="text-sm font-bold text-slate-500 mb-1">Distribución</p>
-            <div className="flex flex-col mt-1">
-              <div className="flex justify-between text-sm font-bold text-slate-700">
-                <span>Impos: {metricas.importaciones}</span>
-                <span>Expos: {metricas.exportaciones}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500 hover:shadow-md transition-all">
+              <p className="text-sm font-bold text-slate-500 mb-1">Total Operaciones</p>
+              <div className="flex items-end gap-2">
+                <h2 className="text-4xl font-extrabold text-slate-900">{metricas.total}</h2>
               </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full mt-2 overflow-hidden flex">
-                <div className="h-full bg-blue-500" style={{ width: `${metricas.total > 0 ? (metricas.importaciones / metricas.total) * 100 : 50}%` }}></div>
-                <div className="h-full bg-emerald-500" style={{ width: `${metricas.total > 0 ? (metricas.exportaciones / metricas.total) * 100 : 50}%` }}></div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500 hover:shadow-md transition-all">
+              <p className="text-sm font-bold text-slate-500 mb-1">Volumen FOB Declarado</p>
+              <div className="flex items-end gap-2">
+                <h2 className="text-2xl font-extrabold text-slate-900">
+                  U$S {metricas.fobTotal.toLocaleString('es-AR')}
+                </h2>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 hover:shadow-md transition-all">
+              <p className="text-sm font-bold text-slate-500 mb-1">Despachos Pendientes</p>
+              <div className="flex items-end gap-2">
+                <h2 className="text-4xl font-extrabold text-slate-900">{metricas.pendientes}</h2>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-green-500 hover:shadow-md transition-all">
+              <p className="text-sm font-bold text-slate-500 mb-1">Distribución</p>
+              <div className="flex flex-col mt-1">
+                <div className="flex justify-between text-sm font-bold text-slate-700">
+                  <span>Impos: {metricas.importaciones}</span>
+                  <span>Expos: {metricas.exportaciones}</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 rounded-full mt-2 overflow-hidden flex">
+                  <div className="h-full bg-blue-500" style={{ width: `${metricas.total > 0 ? (metricas.importaciones / metricas.total) * 100 : 50}%` }}></div>
+                  <div className="h-full bg-emerald-500" style={{ width: `${metricas.total > 0 ? (metricas.exportaciones / metricas.total) * 100 : 50}%` }}></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 className="text-lg font-bold text-slate-800">Actividad Reciente</h3>
-            <Link href="/operaciones" className="text-sm font-bold text-purple-600 hover:text-purple-800">Ver panel completo →</Link>
-          </div>
-          {operacionesRecientes.length === 0 ? (
-            <div className="p-8 text-center text-slate-500">
-              Aún no hay operaciones registradas.
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-800">Actividad Reciente</h3>
+              <Link href="/operaciones" className="text-sm font-bold text-purple-600 hover:text-purple-800">Ver panel completo →</Link>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-600 text-sm">
-                    <th className="p-4 font-bold">Cliente</th>
-                    <th className="p-4 font-bold">Operación</th>
-                    <th className="p-4 font-bold">FOB</th>
-                    <th className="p-4 font-bold">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {operacionesRecientes.map((op) => (
-                    <tr key={op.id} className="border-t border-slate-100 hover:bg-slate-50">
-                      <td className="p-4 font-bold text-slate-900">{op.cliente}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                          {op.tipo}
-                        </span>
-                      </td>
-                      <td className="p-4 text-slate-700 font-mono text-sm">U$S {Number(op.fob).toLocaleString('es-AR')}</td>
-                      <td className="p-4">
-                        <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md border border-slate-200 w-fit">
-                          {op.estado}
-                        </span>
-                      </td>
+            {operacionesRecientes.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">
+                Aún no hay operaciones registradas.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 text-sm">
+                      <th className="p-4 font-bold">Cliente</th>
+                      <th className="p-4 font-bold">Operación</th>
+                      <th className="p-4 font-bold">FOB</th>
+                      <th className="p-4 font-bold">Estado</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {operacionesRecientes.map((op) => (
+                      <tr key={op.id} className="border-t border-slate-100 hover:bg-slate-50">
+                        <td className="p-4 font-bold text-slate-900">{op.cliente}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {op.tipo}
+                          </span>
+                        </td>
+                        <td className="p-4 text-slate-700 font-mono text-sm">U$S {Number(op.fob).toLocaleString('es-AR')}</td>
+                        <td className="p-4">
+                          <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md border border-slate-200 w-fit">
+                            {op.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    )
-  }
+      )}
+    </div>
+  )
 }
