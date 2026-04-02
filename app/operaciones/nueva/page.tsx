@@ -127,28 +127,39 @@ export default function NuevaOperacion() {
   const anteriorPaso = () => { if (paso > 1) setPaso(paso - 1) }
 
   const sugerirNcmConIA = async () => {
-    setIaCargando(true);
-    setAnalisisIA(''); 
+    setIaCargando(true)
     try {
       const res = await fetch('/api/clasificar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           descripcion: formData.productoDescripcion,
-          tipo: formData.tipo 
+          tipo: formData.tipoOperacion
         })
-      });
-      const data = await res.json();
+      })
+      const data = await res.json()
+      setAnalisisIA(data.sugerencia)
+
+      // 🤖 NUEVO ROBOTITO: Busca la Posición SIM a 12 dígitos (Ej: 0713.20.90.000 A)
+      const matchSIM = data.sugerencia.match(/\d{4}\.\d{2}\.\d{2}\.\d{3}\s[A-Z]/i)
       
-      setAnalisisIA(data.sugerencia); 
-      const ncmExtraida = data.sugerencia.match(/\b\d{4}\.\d{2}\.\d{2}\b/);
-      if (ncmExtraida) {
-        setFormData({ ...formData, ncm: ncmExtraida[0] });
+      if (matchSIM) {
+        // Si encuentra los 12 dígitos, los pega completos
+        setFormData(prev => ({ ...prev, ncm: matchSIM[0] }))
+      } else {
+        // Si por algún motivo la IA solo dio 8, pega los 8
+        const matchNCM = data.sugerencia.match(/\d{4}\.\d{2}\.\d{2}/)
+        if (matchNCM) {
+          setFormData(prev => ({ ...prev, ncm: matchNCM[0] }))
+        }
       }
+
     } catch (error) {
-      setAnalisisIA("Error de conexión con la IA.");
+      console.error(error)
+      setAnalisisIA('Hubo un error al consultar al Agente IA. Por favor, intentá de nuevo.')
+    } finally {
+      setIaCargando(false)
     }
-    setIaCargando(false);
   }
 
   const guardarOperacion = async () => {
@@ -384,7 +395,7 @@ export default function NuevaOperacion() {
               </div>
             </div>
           )}
-          
+
 {paso === 4 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
