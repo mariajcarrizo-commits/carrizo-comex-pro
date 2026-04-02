@@ -134,7 +134,7 @@ export default function NuevaOperacion() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           descripcion: formData.productoDescripcion,
-          tipo: formData.tipoOperacion
+          tipo: formData.tipo // 👈 ¡ESTA ES LA PALABRA CORREGIDA!
         })
       })
       const data = await res.json()
