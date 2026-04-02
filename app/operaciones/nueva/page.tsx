@@ -384,49 +384,71 @@ export default function NuevaOperacion() {
               </div>
             </div>
           )}
-
+          
 {paso === 4 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Clasificación Arancelaria</h2>
               <div className="space-y-6">
                 
-                {/* ✨ IA DESBLOQUEADA PARA TODOS LOS USUARIOS ✨ */}
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border border-purple-100 shadow-sm relative overflow-hidden">
+                {/* ✨ IA DESBLOQUEADA Y COLOREADA ✨ */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 md:p-8 rounded-xl border border-purple-100 shadow-sm relative overflow-hidden">
                   <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200 rounded-full blur-[40px] opacity-50"></div>
                   <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2"> ✨ Agente Aduanero Senior (IA) </h3>
-                  <p className="text-xs text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
-                  <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg disabled:opacity-50 transition-all shadow-md">
-                    {iaCargando ? <><span className="animate-spin text-xl">⚙️</span> Procesando...</> : <>Generar Análisis y Sugerir NCM</>}
+                  <p className="text-sm text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic font-bold">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
+                  
+                  <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-4 rounded-xl disabled:opacity-50 transition-all shadow-md text-lg">
+                    {iaCargando ? <><span className="animate-spin text-xl inline-block">⚙️</span> Procesando Análisis SIM...</> : <>Generar Análisis Completo (12 Dígitos)</>}
                   </button>
+                  
                   {analisisIA && (
-                    <div className="mt-4 relative z-10 bg-white/90 backdrop-blur-sm border border-purple-200 rounded-lg p-5 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-inner">
+                    <div className="mt-6 relative z-10 bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-800 whitespace-pre-line leading-relaxed shadow-lg">
                       {analisisIA.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*)/g).map((parte, index) => {
+                        
+                        // 🎨 DETECTOR DE TÍTULOS Y COLORES (***Texto***)
                         if (parte.startsWith('***')) {
-                          return <span key={index} className="font-extrabold italic text-purple-900">{parte.slice(3, -3)}</span>;
+                          const titulo = parte.slice(3, -3);
+                          let colorFondo = "bg-purple-100 border-purple-500 text-purple-900"; // Por defecto Violeta
+                          
+                          if (titulo.includes('🚨') || titulo.includes('TERCEROS')) colorFondo = "bg-orange-100 border-orange-500 text-orange-900"; // Naranja para Alertas
+                          if (titulo.includes('💰') || titulo.includes('TRIBUTACIÓN')) colorFondo = "bg-emerald-100 border-emerald-500 text-emerald-900"; // Verde para Dinero
+                          if (titulo.includes('⚖️') || titulo.includes('LEGAL')) colorFondo = "bg-blue-100 border-blue-500 text-blue-900"; // Azul para lo Legal
+
+                          return (
+                            <div key={index} className={`font-extrabold text-sm md:text-base p-3 rounded-lg mt-6 mb-3 border-l-4 shadow-sm uppercase tracking-wide ${colorFondo}`}>
+                              {titulo}
+                            </div>
+                          );
                         }
+                        
+                        // Textos en Negrita (**Texto**)
                         if (parte.startsWith('**')) {
-                          return <span key={index} className="font-bold text-slate-900">{parte.slice(2, -2)}</span>;
+                          return <span key={index} className="font-extrabold text-slate-900 bg-slate-50 px-1 rounded">{parte.slice(2, -2)}</span>;
                         }
+                        
+                        // Texto normal
                         return <span key={index}>{parte}</span>;
                       })}
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Posición NCM Confirmada</label>
+                {/* CAJA DE CONFIRMACIÓN */}
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Posición SIM Confirmada (12 Dígitos)</label>
                   <div className="flex gap-2">
-                    <input type="text" name="ncm" value={formData.ncm} onChange={handleChange} placeholder="Ej: 9004.10.00" className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500" />
-                    <button type="button" onClick={() => setMostrarSelectorNcm(!mostrarSelectorNcm)} className="px-4 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-slate-200"> 🔍 </button>
+                    {/* 👇 Cambiamos el placeholder para que invite a poner los 12 dígitos 👇 */}
+                    <input type="text" name="ncm" value={formData.ncm} onChange={handleChange} placeholder="Ej: 9004.10.00.000 A" className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500 text-lg tracking-wider" />
+                    <button type="button" onClick={() => setMostrarSelectorNcm(!mostrarSelectorNcm)} className="px-6 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-slate-200 transition-colors"> 🔍 </button>
                   </div>
+                  <p className="text-xs text-slate-500 mt-2">Copiá y pegá aquí la Posición SIM Completa sugerida por la IA arriba.</p>
                 
                   {mostrarSelectorNcm && (
-                    <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50">
-                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar..." className="w-full px-3 py-2 border rounded mb-2 text-slate-900 font-medium" />
+                    <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50 animate-in fade-in">
+                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar en nomenclador..." className="w-full px-3 py-2 border rounded mb-2 text-slate-900 font-medium" />
                       <div className="max-h-40 overflow-y-auto">
                         {ncmFiltrados.map((item) => (
-                            <button key={item.codigo} type="button" onClick={() => seleccionarNcm(item.codigo, item.descripcion)} className="w-full text-left p-2 hover:bg-white text-sm border-b border-slate-100 text-slate-800">
-                              <span className="font-bold">{item.codigo}</span> - {item.descripcion.substring(0,35)}...
+                            <button key={item.codigo} type="button" onClick={() => seleccionarNcm(item.codigo, item.descripcion)} className="w-full text-left p-3 hover:bg-white text-sm border-b border-slate-100 text-slate-800 transition-colors">
+                              <span className="font-bold text-purple-700">{item.codigo}</span> - {item.descripcion.substring(0,40)}...
                             </button>
                         ))}
                       </div>
