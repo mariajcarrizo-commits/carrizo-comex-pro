@@ -443,28 +443,11 @@ export default function NuevaOperacion() {
                   )}
                 </div>
 
-                {/* CAJA DE CONFIRMACIÓN */}
+                {/* CAJA DE CONFIRMACIÓN LIMPIA (SIN LUPITA) */}
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Posición SIM Confirmada (12 Dígitos)</label>
-                  <div className="flex gap-2">
-                    {/* 👇 Cambiamos el placeholder para que invite a poner los 12 dígitos 👇 */}
-                    <input type="text" name="ncm" value={formData.ncm} onChange={handleChange} placeholder="Ej: 9004.10.00.000 A" className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500 text-lg tracking-wider" />
-                    <button type="button" onClick={() => setMostrarSelectorNcm(!mostrarSelectorNcm)} className="px-6 bg-slate-100 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-slate-200 transition-colors"> 🔍 </button>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-2">Copiá y pegá aquí la Posición SIM Completa sugerida por la IA arriba.</p>
-                
-                  {mostrarSelectorNcm && (
-                    <div className="mt-4 border border-slate-300 rounded-lg p-3 bg-slate-50 animate-in fade-in">
-                      <input type="text" value={busquedaNcm} onChange={(e) => setBusquedaNcm(e.target.value)} placeholder="Buscar o verificar en nomenclador..." className="w-full px-3 py-2 border rounded mb-2 text-slate-900 font-medium" />
-                      <div className="max-h-40 overflow-y-auto">
-                        {ncmFiltrados.map((item) => (
-                            <button key={item.codigo} type="button" onClick={() => seleccionarNcm(item.codigo, item.descripcion)} className="w-full text-left p-3 hover:bg-white text-sm border-b border-slate-100 text-slate-800 transition-colors">
-                              <span className="font-bold text-purple-700">{item.codigo}</span> - {item.descripcion.substring(0,40)}...
-                            </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <input type="text" name="ncm" value={formData.ncm} onChange={handleChange} placeholder="Ej: 9004.10.00.000 A" className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-bold outline-none focus:ring-2 focus:ring-purple-500 text-lg tracking-wider" />
+                  <p className="text-xs text-slate-500 mt-2">Verificá que la posición SIM sugerida por la IA esté completa aquí.</p>
                 </div>
               </div>
             </div>
