@@ -38,11 +38,14 @@ export default function Dashboard() {
         setNombreEmpresa(perfil.empresa)
       }
 
-      // ⏱️ LÓGICA DE VENCIMIENTO
-      if (perfil?.vencimiento_suscripcion) {
+      // ⏱️ LÓGICA DE VENCIMIENTO (EL CANDADO INTELIGENTE)
+      // Solo le cobramos a los Despachantes (admin). Los Importadores (cliente) entran gratis a ver sus cargas.
+      if (rol !== 'cliente') {
         const hoy = new Date()
-        const vencimiento = new Date(perfil.vencimiento_suscripcion)
-        if (hoy > vencimiento) {
+        const vencimiento = perfil?.vencimiento_suscripcion ? new Date(perfil.vencimiento_suscripcion) : null
+        
+        // Si NO tiene fecha (es nuevo) o si la fecha ya venció -> SE BLOQUEA
+        if (!vencimiento || hoy > vencimiento) {
           setSuscripcionVencida(true)
           setCargando(false)
           return // Cortamos la carga acá
