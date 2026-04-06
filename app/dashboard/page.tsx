@@ -28,7 +28,7 @@ export default function Dashboard() {
 
       const { data: perfil } = await supabase
         .from('perfiles')
-        .select('rol_usuario, empresa')
+        .select('rol_usuario, empresa, vencimiento_suscripcion')
         .eq('email', user.email)
         .single()
 
@@ -38,6 +38,17 @@ export default function Dashboard() {
         setNombreEmpresa(perfil.empresa)
       }
 
+      // ⏱️ LÓGICA DE VENCIMIENTO
+      if (perfil?.vencimiento_suscripcion) {
+        const hoy = new Date()
+        const vencimiento = new Date(perfil.vencimiento_suscripcion)
+        if (hoy > vencimiento) {
+          setSuscripcionVencida(true)
+          setCargando(false)
+          return // Cortamos la carga acá
+        }
+      }
+
       let query = supabase.from('operaciones').select('*').order('created_at', { ascending: false })
 
       if (rol === 'cliente') {
@@ -45,23 +56,7 @@ export default function Dashboard() {
       } else {
          query = query.eq('email_creador', user.email)
       }
-      const rol = perfil?.rol_usuario || 'admin'
-      setRolUsuario(rol)
-      if (perfil?.empresa) {
-        setNombreEmpresa(perfil.empresa)
-      }
 
-      // ⏱️ LÓGICA DE VENCIMIENTO ACÁ 👇
-      if (perfil?.vencimiento_suscripcion) {
-        const hoy = new Date()
-        const vencimiento = new Date(perfil.vencimiento_suscripcion)
-        if (hoy > vencimiento) {
-          setSuscripcionVencida(true)
-          setCargando(false)
-          return // Cortamos la carga acá, no le mostramos los datos
-        }
-      }
-      // ☝️ FIN LÓGICA DE VENCIMIENTO
       const { data, error } = await query
 
       if (error) {
@@ -89,29 +84,6 @@ export default function Dashboard() {
   }, [])
 
   if (cargando) {
-    if (suscripcionVencida) {
-      return (
-        <div className="min-h-screen bg-slate-50 flex justify-center items-center p-4">
-          <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl max-w-lg text-center border border-slate-200">
-            <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">💳</div>
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Suscripción Vencida</h2>
-            <p className="text-slate-600 mb-8 leading-relaxed">
-              Tu ciclo de facturación mensual ha finalizado. Para seguir utilizando la Inteligencia Artificial y gestionar tus operaciones en <strong>CARRIZO Comex</strong>, por favor renová tu plan.
-            </p>
-            <button onClick={() => window.open('https://wa.me/TUNUMERODEWHATSAPP', '_blank')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
-              Contactar a Administración
-            </button>
-            <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-slate-500 font-bold hover:text-slate-700">
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      )
-    }
-  
-  http://googleusercontent.com/immersive_entry_chip/0
-  
-  ¡Disfrutá este momento, Majo! El primer cliente es el que rompe el hielo, ¡ahora se viene la avalancha! 🥂🚀
     return (
       <div className="min-h-screen bg-slate-50 flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
@@ -119,66 +91,86 @@ export default function Dashboard() {
     )
   }
 
+  if (suscripcionVencida) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex justify-center items-center p-4">
+        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl max-w-lg text-center border border-slate-200">
+          <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">💳</div>
+          <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Suscripción Vencida</h2>
+          <p className="text-slate-600 mb-8 leading-relaxed">
+            Tu ciclo de facturación mensual ha finalizado. Para seguir utilizando la Inteligencia Artificial y gestionar tus operaciones en <strong>CARRIZO Comex</strong>, por favor renová tu plan.
+          </p>
+          <button onClick={() => window.open('https://wa.me/5491166478496', '_blank')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
+            Contactar a Administración
+          </button>
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-slate-500 font-bold hover:text-slate-700">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       {rolUsuario === 'cliente' ? (
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-gradient-to-r from-slate-900 to-purple-900 rounded-2xl p-8 mb-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-             <div>
-                <h1 className="text-3xl font-extrabold mb-1">Portal de Seguimiento</h1>
-                <p className="text-purple-200">Bienvenido/a, <span className="font-bold text-white">{emailUser}</span></p>
-             </div>
-             <div className="bg-white/10 border border-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
-                <span className="text-sm text-purple-200">Operador:</span> <span className="font-bold">{nombreEmpresa}</span>
-             </div>
-          </div>
+         <div className="max-w-5xl mx-auto">
+           <div className="bg-gradient-to-r from-slate-900 to-purple-900 rounded-2xl p-8 mb-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                 <h1 className="text-3xl font-extrabold mb-1">Portal de Seguimiento</h1>
+                 <p className="text-purple-200">Bienvenido/a, <span className="font-bold text-white">{emailUser}</span></p>
+              </div>
+              <div className="bg-white/10 border border-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                 <span className="text-sm text-purple-200">Operador:</span> <span className="font-bold">{nombreEmpresa}</span>
+              </div>
+           </div>
 
-          {operacionesCliente.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
-                <div className="text-6xl mb-4">📦</div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">No tenés operaciones activas</h3>
-                <p className="text-slate-500">Cuando tu operador asigne una carga, aparecerá aquí.</p>
-              </div>
-          ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                 <div className="p-6 border-b border-slate-100 bg-slate-50">
-                    <h3 className="text-lg font-bold text-slate-800">Tus Cargas en Curso</h3>
-                 </div>
-                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-white text-slate-500 text-sm border-b border-slate-200">
-                          <th className="p-4 font-bold uppercase tracking-wider">Ref / Fecha</th>
-                          <th className="p-4 font-bold uppercase tracking-wider">Mercadería</th>
-                          <th className="p-4 font-bold uppercase tracking-wider text-right">Estado Actual</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {operacionesCliente.map((op) => (
-                           <tr key={op.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                             <td className="p-4">
-                                <div className="font-bold text-slate-900">#OP-{op.id.substring(0,6).toUpperCase()}</div>
-                                <div className="text-xs text-slate-500 mt-1">{new Date(op.created_at).toLocaleDateString('es-AR')}</div>
-                             </td>
-                             <td className="p-4">
-                                 <span className={`inline-block mb-1 px-2.5 py-0.5 rounded-md text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                                   {op.tipo} ({op.pais})
-                                 </span>
-                                 <div className="font-medium text-slate-800">{op.producto}</div>
-                             </td>
-                             <td className="p-4 text-right">
-                                 <span className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 shadow-sm">
-                                   {op.estado}
-                                 </span>
-                             </td>
-                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                 </div>
-              </div>
-          )}
-        </div>
+           {operacionesCliente.length === 0 ? (
+               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                 <div className="text-6xl mb-4">📦</div>
+                 <h3 className="text-xl font-bold text-slate-800 mb-2">No tenés operaciones activas</h3>
+                 <p className="text-slate-500">Cuando tu operador asigne una carga, aparecerá aquí.</p>
+               </div>
+           ) : (
+               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="p-6 border-b border-slate-100 bg-slate-50">
+                     <h3 className="text-lg font-bold text-slate-800">Tus Cargas en Curso</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                     <table className="w-full text-left">
+                       <thead>
+                         <tr className="bg-white text-slate-500 text-sm border-b border-slate-200">
+                           <th className="p-4 font-bold uppercase tracking-wider">Ref / Fecha</th>
+                           <th className="p-4 font-bold uppercase tracking-wider">Mercadería</th>
+                           <th className="p-4 font-bold uppercase tracking-wider text-right">Estado Actual</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {operacionesCliente.map((op) => (
+                            <tr key={op.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                              <td className="p-4">
+                                 <div className="font-bold text-slate-900">#OP-{op.id.substring(0,6).toUpperCase()}</div>
+                                 <div className="text-xs text-slate-500 mt-1">{new Date(op.created_at).toLocaleDateString('es-AR')}</div>
+                              </td>
+                              <td className="p-4">
+                                  <span className={`inline-block mb-1 px-2.5 py-0.5 rounded-md text-xs font-bold ${op.tipo === 'Importación' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                    {op.tipo} ({op.pais})
+                                  </span>
+                                  <div className="font-medium text-slate-800">{op.producto}</div>
+                              </td>
+                              <td className="p-4 text-right">
+                                  <span className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 shadow-sm">
+                                    {op.estado}
+                                  </span>
+                              </td>
+                            </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                  </div>
+               </div>
+           )}
+         </div>
       ) : (
         <div className="max-w-7xl mx-auto">
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
