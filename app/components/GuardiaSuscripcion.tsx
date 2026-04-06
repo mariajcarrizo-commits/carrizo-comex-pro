@@ -2,47 +2,69 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 export default function GuardiaSuscripcion({ children }: { children: React.ReactNode }) {
-  const [suscripcionVencida, setSuscripcionVencida] = useState(false)
+  // Ahora el estado inicial es "cargando", nadie entra hasta que se verifique.
+  const [estado, setEstado] = useState<'cargando' | 'bloqueado' | 'permitido'>('cargando')
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const checkSuscripcion = async () => {
-      // No bloqueamos la página de login
-      if (pathname === '/login') return
+      // Si está en el login, lo dejamos en paz
+      if (pathname === '/login') {
+        setEstado('permitido')
+        return
+      }
 
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      
+      // Si no hay usuario logueado, lo pateamos al login
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
+      // Buscamos su perfil y su fecha de pago
       const { data: perfil } = await supabase
         .from('perfiles')
         .select('rol_usuario, vencimiento_suscripcion')
         .eq('email', user.email)
         .single()
 
+      // Si es un Despachante (admin), revisamos el reloj
       if (perfil && perfil.rol_usuario !== 'cliente') {
         const hoy = new Date()
         const vencimiento = perfil.vencimiento_suscripcion ? new Date(perfil.vencimiento_suscripcion) : null
         
-        // Si no tiene fecha o si ya pasó la fecha, lo bloqueamos
         if (!vencimiento || hoy > vencimiento) {
-          setSuscripcionVencida(true)
+          setEstado('bloqueado') // ¡NO PAGÓ!
         } else {
-          setSuscripcionVencida(false) // Por si acaba de pagar y recarga
+          setEstado('permitido') // ¡PAGÓ!
         }
+      } else {
+        // Si es Importador (cliente), entra gratis
+        setEstado('permitido')
       }
     }
 
     checkSuscripcion()
-  }, [pathname]) // Esto hace que revise el pago CADA VEZ que cambia de página
+  }, [pathname, router])
 
-  // Si está vencido y no está en la página de login, mostramos la pantalla de bloqueo TOTAL
-  if (suscripcionVencida && pathname !== '/login') {
+  // 1. MIENTRAS PIENSA: Mostramos pantalla de carga, NO mostramos el menú
+  if (estado === 'cargando') {
+    return (
+      <div className="min-h-screen bg-slate-900 flex justify-center items-center">
+        <div className="animate-spin text-4xl">⚙️</div>
+      </div>
+    )
+  }
+
+  // 2. SI NO PAGÓ: Mostramos la pantalla roja, NO mostramos el menú
+  if (estado === 'bloqueado') {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        {/* Luces premium de fondo */}
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20"></div>
         
@@ -52,7 +74,7 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
           <p className="text-slate-600 mb-8 leading-relaxed font-medium">
             Tu ciclo de facturación mensual ha finalizado o tu cuenta es nueva. Para utilizar <strong>CARRIZO Comex</strong>, por favor habilitá tu plan.
           </p>
-          <button onClick={() => window.open('https://wa.me/5491166478496', '_blank')} className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
+          <button onClick={() => window.open('https://wa.me/TUNUMERODEWHATSAPP', '_blank')} className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
             Contactar a Administración
           </button>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-purple-600 font-bold hover:text-purple-800 transition-colors">
@@ -63,6 +85,6 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
     )
   }
 
-  // Si pagó (o si es Importador), lo dejamos ver la plataforma normal
+  // 3. SI ESTÁ TODO OK: Le dibujamos la plataforma con el menú arriba
   return <>{children}</>
 }
