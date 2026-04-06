@@ -11,7 +11,8 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
 
   useEffect(() => {
     const checkSuscripcion = async () => {
-      if (pathname === '/login') {
+      // 🛑 ACÁ ESTÁ EL ARREGLO: Dejamos pasar libremente al Login Y a la Portada (/)
+      if (pathname === '/login' || pathname === '/') {
         setEstado('permitido')
         return
       }
@@ -29,19 +30,16 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
         .eq('email', user.email)
         .single()
 
-      // 🛡️ REGLA DE ORO: Si hay error de conexión o no encuentra el perfil, BLOQUEADO.
       if (error || !perfil) {
         setEstado('bloqueado')
         return
       }
 
-      // Si es Importador (cliente), entra gratis
       if (perfil.rol_usuario === 'cliente') {
         setEstado('permitido')
         return
       }
 
-      // Si es Despachante, revisamos el reloj con lupa
       const hoy = new Date()
       const vencimiento = perfil.vencimiento_suscripcion ? new Date(perfil.vencimiento_suscripcion) : null
       
