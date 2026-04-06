@@ -1,8 +1,8 @@
 import './globals.css'
 import Navbar from './components/Navbar'
-import AutoLogout from './components/AutoLogout' // 👈 ACÁ ESTÁ EL IMPORT (Le decimos dónde buscarlo)
+import AutoLogout from './components/AutoLogout'
+import GuardiaSuscripcion from './components/GuardiaSuscripcion'
 
-// 👇 ESTA ES LA MAGIA PARA EL LOGO DE LA PESTAÑA 👇
 export const metadata = {
   title: 'CARRIZO Comex',
   description: 'Asistente Inteligente para Despachantes de Aduana',
@@ -19,9 +19,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="bg-slate-900 text-slate-100">
-        <Navbar />
-        <AutoLogout /> {/* 👈 ACÁ COLOCAMOS LA PIEZA (El vigilante invisible) */}
-        <main className="min-h-screen">{children}</main>
+        <GuardiaSuscripcion>
+          <Navbar />
+          <AutoLogout />
+          <main className="min-h-screen">{children}</main>
+        </GuardiaSuscripcion>
       </body>
     </html>
   )
