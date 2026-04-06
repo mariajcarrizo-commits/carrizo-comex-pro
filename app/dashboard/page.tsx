@@ -15,6 +15,7 @@ export default function Dashboard() {
   })
   const [operacionesRecientes, setOperacionesRecientes] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
+  const [suscripcionVencida, setSuscripcionVencida] = useState(false)
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -44,7 +45,23 @@ export default function Dashboard() {
       } else {
          query = query.eq('email_creador', user.email)
       }
+      const rol = perfil?.rol_usuario || 'admin'
+      setRolUsuario(rol)
+      if (perfil?.empresa) {
+        setNombreEmpresa(perfil.empresa)
+      }
 
+      // ⏱️ LÓGICA DE VENCIMIENTO ACÁ 👇
+      if (perfil?.vencimiento_suscripcion) {
+        const hoy = new Date()
+        const vencimiento = new Date(perfil.vencimiento_suscripcion)
+        if (hoy > vencimiento) {
+          setSuscripcionVencida(true)
+          setCargando(false)
+          return // Cortamos la carga acá, no le mostramos los datos
+        }
+      }
+      // ☝️ FIN LÓGICA DE VENCIMIENTO
       const { data, error } = await query
 
       if (error) {
@@ -72,6 +89,29 @@ export default function Dashboard() {
   }, [])
 
   if (cargando) {
+    if (suscripcionVencida) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex justify-center items-center p-4">
+          <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl max-w-lg text-center border border-slate-200">
+            <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">💳</div>
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Suscripción Vencida</h2>
+            <p className="text-slate-600 mb-8 leading-relaxed">
+              Tu ciclo de facturación mensual ha finalizado. Para seguir utilizando la Inteligencia Artificial y gestionar tus operaciones en <strong>CARRIZO Comex</strong>, por favor renová tu plan.
+            </p>
+            <button onClick={() => window.open('https://wa.me/TUNUMERODEWHATSAPP', '_blank')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
+              Contactar a Administración
+            </button>
+            <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-slate-500 font-bold hover:text-slate-700">
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      )
+    }
+  
+  http://googleusercontent.com/immersive_entry_chip/0
+  
+  ¡Disfrutá este momento, Majo! El primer cliente es el que rompe el hielo, ¡ahora se viene la avalancha! 🥂🚀
     return (
       <div className="min-h-screen bg-slate-50 flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
