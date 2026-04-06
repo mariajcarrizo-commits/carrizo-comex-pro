@@ -1,18 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase' // 👈 ACÁ ESTÁ EL ARREGLO (../../)
+import { supabase } from '../../lib/supabase'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function GuardiaSuscripcion({ children }: { children: React.ReactNode }) {
-  // Ahora el estado inicial es "cargando", nadie entra hasta que se verifique.
   const [estado, setEstado] = useState<'cargando' | 'bloqueado' | 'permitido'>('cargando')
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
     const checkSuscripcion = async () => {
-      // Si está en el login, lo dejamos en paz
       if (pathname === '/login') {
         setEstado('permitido')
         return
@@ -20,39 +18,43 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
 
       const { data: { user } } = await supabase.auth.getUser()
       
-      // Si no hay usuario logueado, lo pateamos al login
       if (!user) {
         router.push('/login')
         return
       }
 
-      // Buscamos su perfil y su fecha de pago
-      const { data: perfil } = await supabase
+      const { data: perfil, error } = await supabase
         .from('perfiles')
         .select('rol_usuario, vencimiento_suscripcion')
         .eq('email', user.email)
         .single()
 
-      // Si es un Despachante (admin), revisamos el reloj
-      if (perfil && perfil.rol_usuario !== 'cliente') {
-        const hoy = new Date()
-        const vencimiento = perfil.vencimiento_suscripcion ? new Date(perfil.vencimiento_suscripcion) : null
-        
-        if (!vencimiento || hoy > vencimiento) {
-          setEstado('bloqueado') // ¡NO PAGÓ!
-        } else {
-          setEstado('permitido') // ¡PAGÓ!
-        }
-      } else {
-        // Si es Importador (cliente), entra gratis
+      // 🛡️ REGLA DE ORO: Si hay error de conexión o no encuentra el perfil, BLOQUEADO.
+      if (error || !perfil) {
+        setEstado('bloqueado')
+        return
+      }
+
+      // Si es Importador (cliente), entra gratis
+      if (perfil.rol_usuario === 'cliente') {
         setEstado('permitido')
+        return
+      }
+
+      // Si es Despachante, revisamos el reloj con lupa
+      const hoy = new Date()
+      const vencimiento = perfil.vencimiento_suscripcion ? new Date(perfil.vencimiento_suscripcion) : null
+      
+      if (!vencimiento || hoy > vencimiento) {
+        setEstado('bloqueado') // ¡NO PAGÓ!
+      } else {
+        setEstado('permitido') // ¡PAGÓ!
       }
     }
 
     checkSuscripcion()
   }, [pathname, router])
 
-  // 1. MIENTRAS PIENSA: Mostramos pantalla de carga, NO mostramos el menú
   if (estado === 'cargando') {
     return (
       <div className="min-h-screen bg-slate-900 flex justify-center items-center">
@@ -61,7 +63,6 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
     )
   }
 
-  // 2. SI NO PAGÓ: Mostramos la pantalla roja, NO mostramos el menú
   if (estado === 'bloqueado') {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -85,6 +86,5 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
     )
   }
 
-  // 3. SI ESTÁ TODO OK: Le dibujamos la plataforma con el menú arriba
   return <>{children}</>
 }
