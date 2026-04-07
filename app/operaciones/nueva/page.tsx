@@ -212,6 +212,7 @@ export default function NuevaOperacion() {
     } else {
       window.location.href = '/operaciones'
     }
+  } // 👈 ¡ESTA ES LA LLAVE QUE FALTABA!
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
