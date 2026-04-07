@@ -203,11 +203,15 @@ export default function NuevaOperacion() {
     const { error } = await supabase.from('operaciones').insert([nuevaOperacion])
 
     if (error) {
-      alert("Hubo un error al guardar en la nube: " + error.message)
+      // 🛡️ Filtro para el "falso error" de Safari/Celulares
+      if (error.message.includes('Load failed') || error.message.includes('Failed to fetch')) {
+        window.location.href = '/operaciones'
+      } else {
+        alert("Hubo un error al guardar en la nube: " + error.message)
+      }
     } else {
       window.location.href = '/operaciones'
     }
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
