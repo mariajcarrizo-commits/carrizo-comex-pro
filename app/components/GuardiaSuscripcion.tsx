@@ -74,7 +74,7 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
             Tu ciclo de facturación mensual ha finalizado o tu cuenta es nueva. Para utilizar <strong>CARRIZO Comex</strong>, por favor habilitá tu plan.
           </p>
           <button onClick={() => window.open('https://wa.me/TUNUMERODEWHATSAPP', '_blank')} className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
-            Contactar a Administración
+          Contactar a Administración para recibir el acceso
           </button>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-purple-600 font-bold hover:text-purple-800 transition-colors">
             Cerrar sesión
