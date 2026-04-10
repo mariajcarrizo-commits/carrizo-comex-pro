@@ -11,7 +11,7 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
 
   useEffect(() => {
     const checkSuscripcion = async () => {
-      // 🛑 ACÁ ESTÁ EL ARREGLO: Dejamos pasar libremente al Login Y a la Portada (/)
+      // 🛑 Dejamos pasar libremente al Login y a la Portada (/)
       if (pathname === '/login' || pathname === '/') {
         setEstado('permitido')
         return
@@ -74,7 +74,6 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
             Tu ciclo de facturación mensual ha finalizado o tu cuenta es nueva. Para utilizar <strong>CARRIZO Comex</strong>, por favor habilitá tu plan.
           </p>
           
-          {/* Botón de WhatsApp Corregido y Blindado */}
           <button onClick={() => window.open('https://api.whatsapp.com/send?phone=5491166478496&text=Hola%20Majo,%20me%20acabo%20de%20registrar%20en%20CARRIZO%20Comex.%20%C2%BFMe%20habilit%C3%A1s%20el%20acceso%3F', '_blank')} className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
             Contactar a Administración para recibir acceso
           </button>
