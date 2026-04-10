@@ -73,7 +73,7 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
           <p className="text-slate-600 mb-8 leading-relaxed font-medium">
             Tu ciclo de facturación mensual ha finalizado o tu cuenta es nueva. Para utilizar <strong>CARRIZO Comex</strong>, por favor habilitá tu plan.
           </p>
-          <button onClick={() => window.open('https://wa.me/5491166478496?text=Hola%20Majo,%20me%20acabo%20de%20registrar%20en%20CARRIZO%20Comex.%20%C2%BFMe%20habilit%C3%A1s%20el%20acceso?', '_blank')
+          <button onClick=() => window.open('https://wa.me/5491166478496?text=Hola%20Majo,%20me%20acabo%20de%20registrar%20en%20CARRIZO%20Comex.%20%C2%BFMe%20habilit%C3%A1s%20el%20acceso?', '_blank')
           Contactar a Administración para recibir el acceso
           </button>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-purple-600 font-bold hover:text-purple-800 transition-colors">
