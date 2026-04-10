@@ -104,7 +104,7 @@ export default function Dashboard() {
             Tu ciclo de facturación mensual ha finalizado. Para seguir utilizando la Inteligencia Artificial y gestionar tus operaciones en <strong>CARRIZO Comex</strong>, por favor renová tu plan.
           </p>
           <button onClick={() => window.open('https://wa.me/5491166478496', '_blank')} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
-            Contactar a Administración
+            Contactar a Administración para recibir el acceso
           </button>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-slate-500 font-bold hover:text-slate-700">
             Cerrar sesión
