@@ -5,52 +5,33 @@ import { supabase } from '../../lib/supabase'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function GuardiaSuscripcion({ children }: { children: React.ReactNode }) {
-  const [estado, setEstado] = useState<'cargando' | 'bloqueado' | 'permitido'>('cargando')
+  const [estado, setEstado] = useState<'cargando' | 'permitido'>('cargando')
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    const checkSuscripcion = async () => {
-      // 🛑 Dejamos pasar libremente al Login y a la Portada (/)
+    const checkAcceso = async () => {
+      // 1. Rutas públicas (Login y Portada) dejamos pasar directo
       if (pathname === '/login' || pathname === '/') {
         setEstado('permitido')
         return
       }
 
+      // 2. Verificamos que el usuario esté autenticado (que se haya registrado)
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
+        // Si no está logueado o registrado, lo mandamos al login
         router.push('/login')
         return
       }
 
-      const { data: perfil, error } = await supabase
-        .from('perfiles')
-        .select('rol_usuario, vencimiento_suscripcion')
-        .eq('email', user.email)
-        .single()
-
-      if (error || !perfil) {
-        setEstado('bloqueado')
-        return
-      }
-
-      if (perfil.rol_usuario === 'cliente') {
-        setEstado('permitido')
-        return
-      }
-
-      const hoy = new Date()
-      const vencimiento = perfil.vencimiento_suscripcion ? new Date(perfil.vencimiento_suscripcion) : null
-      
-      if (!vencimiento || hoy > vencimiento) {
-        setEstado('bloqueado') // ¡NO PAGÓ!
-      } else {
-        setEstado('permitido') // ¡PAGÓ!
-      }
+      // 3. ¡VÍA LIBRE! Como queremos que prueben todo, le damos acceso directo.
+      // Acá eliminamos el chequeo de la tabla "perfiles" que bloqueaba por pago.
+      setEstado('permitido')
     }
 
-    checkSuscripcion()
+    checkAcceso()
   }, [pathname, router])
 
   if (estado === 'cargando') {
@@ -61,30 +42,6 @@ export default function GuardiaSuscripcion({ children }: { children: React.React
     )
   }
 
-  if (estado === 'bloqueado') {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20"></div>
-        
-        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl max-w-lg text-center relative z-10 border border-slate-100">
-          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-sm border border-red-100">💳</div>
-          <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Acceso Restringido</h2>
-          <p className="text-slate-600 mb-8 leading-relaxed font-medium">
-            Tu ciclo de facturación mensual ha finalizado o tu cuenta es nueva. Para utilizar <strong>CARRIZO Comex</strong>, por favor habilitá tu plan.
-          </p>
-          
-          <button onClick={() => window.open('https://api.whatsapp.com/send?phone=5491166478496&text=Hola%20Majo,%20me%20acabo%20de%20registrar%20en%20CARRIZO%20Comex.%20%C2%BFMe%20habilit%C3%A1s%20el%20acceso%3F', '_blank')} className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all w-full mb-4">
-            Contactar a Administración para recibir acceso
-          </button>
-
-          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }} className="text-purple-600 font-bold hover:text-purple-800 transition-colors">
-            Cerrar sesión
-          </button>
-        </div>
-      </div>
-    )
-  }
-
+  // Si está permitido (está logueado), le mostramos el dashboard y la app
   return <>{children}</>
 }
