@@ -13,20 +13,22 @@ export default function Navbar() {
   const [iniciales, setIniciales] = useState('')
   
   // ✨ NUEVO: Estado para saber si el menú del celu está abierto o cerrado
-  const [menuAbierto, setMenuAbierto] = useState(false) 
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  const [rol, setRol] = useState('admin')
 
   useEffect(() => {
     const cargarUsuario = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.email) {
         setEmail(user.email)
-        
+
         const { data } = await supabase
           .from('perfiles')
-          .select('nombre_completo')
+          .select('nombre_completo, rol_usuario')
           .eq('email', user.email)
           .single()
         
+        setRol(data?.rol_usuario || 'admin')
         if (data?.nombre_completo) {
           setNombreCompleto(data.nombre_completo)
           const partesNombre = data.nombre_completo.split(' ')
@@ -51,6 +53,18 @@ export default function Navbar() {
   }
 
   if (pathname === '/login') return null
+  if (pathname === '/') return null // la portada tiene su propia barra
+
+  // El cliente (importador/exportador) solo ve su portal de seguimiento.
+  const links = rol === 'cliente'
+    ? [{ href: '/dashboard', label: 'Mis Operaciones', icono: '📦' }]
+    : [
+        { href: '/dashboard', label: 'Dashboard', icono: '📊' },
+        { href: '/operaciones', label: 'Operaciones', icono: '📦' },
+        { href: '/calculadora', label: 'Calculadora', icono: '🧮' },
+        { href: '/equipo', label: 'Mi Equipo', icono: '👥' },
+      ]
+  const activo = (href: string) => href === '/operaciones' ? !!pathname?.includes('/operaciones') : pathname === href
 
   return (
     <nav className="bg-slate-900 border-b border-slate-800 text-white relative z-50">
@@ -74,10 +88,9 @@ export default function Navbar() {
 
           {/* MENÚ CENTRAL (SOLO PC) */}
           <div className="hidden md:flex space-x-8">
-            <Link href="/dashboard" className={`text-sm font-bold transition-colors ${pathname === '/dashboard' ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Dashboard</Link>
-            <Link href="/operaciones" className={`text-sm font-bold transition-colors ${pathname?.includes('/operaciones') ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Operaciones</Link>
-            <Link href="/calculadora" className={`text-sm font-bold transition-colors ${pathname === '/calculadora' ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Calculadora</Link>
-            <Link href="/equipo" className={`text-sm font-bold transition-colors ${pathname === '/equipo' ? 'text-white' : 'text-slate-400 hover:text-white'}`}>Mi Equipo</Link>
+            {links.map(l => (
+              <Link key={l.href} href={l.href} className={`text-sm font-bold transition-colors ${activo(l.href) ? 'text-white' : 'text-slate-400 hover:text-white'}`}>{l.label}</Link>
+            ))}
           </div>
 
           {/* PERFIL Y CERRAR SESIÓN (SOLO PC) */}
@@ -101,10 +114,9 @@ export default function Navbar() {
       {menuAbierto && (
         <div className="md:hidden bg-slate-800 border-b border-slate-700 p-4 absolute w-full shadow-2xl">
           <div className="flex flex-col space-y-5">
-            <Link onClick={() => setMenuAbierto(false)} href="/dashboard" className={`text-lg font-bold flex items-center gap-2 ${pathname === '/dashboard' ? 'text-purple-400' : 'text-white'}`}>📊 Dashboard</Link>
-            <Link onClick={() => setMenuAbierto(false)} href="/operaciones" className={`text-lg font-bold flex items-center gap-2 ${pathname?.includes('/operaciones') ? 'text-purple-400' : 'text-white'}`}>📦 Operaciones</Link>
-            <Link onClick={() => setMenuAbierto(false)} href="/calculadora" className={`text-lg font-bold flex items-center gap-2 ${pathname === '/calculadora' ? 'text-purple-400' : 'text-white'}`}>🧮 Calculadora</Link>
-            <Link onClick={() => setMenuAbierto(false)} href="/equipo" className={`text-lg font-bold flex items-center gap-2 ${pathname === '/equipo' ? 'text-purple-400' : 'text-white'}`}>👥 Mi Equipo</Link>
+            {links.map(l => (
+              <Link key={l.href} onClick={() => setMenuAbierto(false)} href={l.href} className={`text-lg font-bold flex items-center gap-2 ${activo(l.href) ? 'text-purple-400' : 'text-white'}`}>{l.icono} {l.label}</Link>
+            ))}
             
             <div className="pt-4 mt-2 border-t border-slate-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">

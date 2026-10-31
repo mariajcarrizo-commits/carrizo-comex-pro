@@ -1,38 +1,53 @@
 'use client'
 
 import { useEffect } from 'react'
-import { supabase } from '../../lib/supabase' // 👈 ACÁ ESTÁ EL ARREGLO (le sumé un punto)
-import { useRouter } from 'next/navigation'
+import { supabase } from '../../lib/supabase'
+import { usePathname, useRouter } from 'next/navigation'
+
+// Cierre de sesión por inactividad.
+// Escucha también toques y scroll para que en el celular no se corte la sesión mientras el usuario lee.
+const TIEMPO_LIMITE = 30 * 60 * 1000 // 30 minutos
+
+const EVENTOS = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll', 'wheel'] as const
 
 export default function AutoLogout() {
   const router = useRouter()
-  const TIEMPO_LIMITE = 5 * 60 * 1000 // 5 minutos en milisegundos
+  const pathname = usePathname()
 
   useEffect(() => {
-    let timer: NodeJS.Timeout
+    if (pathname === '/login' || pathname === '/') return
+
+    let timer: ReturnType<typeof setTimeout>
+    let ultimaActividad = Date.now()
+
+    const cerrarSesion = async () => {
+      await supabase.auth.signOut()
+      router.push('/login')
+    }
 
     const reiniciarTimer = () => {
+      ultimaActividad = Date.now()
       clearTimeout(timer)
-      timer = setTimeout(async () => {
-        await supabase.auth.signOut()
-        router.push('/login')
-      }, TIEMPO_LIMITE)
+      timer = setTimeout(cerrarSesion, TIEMPO_LIMITE)
     }
 
-    // Escuchamos movimientos
-    window.addEventListener('mousemove', reiniciarTimer)
-    window.addEventListener('keydown', reiniciarTimer)
-    window.addEventListener('click', reiniciarTimer)
+    // Al volver a la pestaña (ej. el celular estuvo bloqueado), revisamos el tiempo real transcurrido.
+    const alVolver = () => {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - ultimaActividad >= TIEMPO_LIMITE) cerrarSesion()
+      else reiniciarTimer()
+    }
 
-    reiniciarTimer() // Iniciamos el timer al cargar
+    EVENTOS.forEach(ev => window.addEventListener(ev, reiniciarTimer, { passive: true }))
+    document.addEventListener('visibilitychange', alVolver)
+    reiniciarTimer()
 
     return () => {
-      window.removeEventListener('mousemove', reiniciarTimer)
-      window.removeEventListener('keydown', reiniciarTimer)
-      window.removeEventListener('click', reiniciarTimer)
+      EVENTOS.forEach(ev => window.removeEventListener(ev, reiniciarTimer))
+      document.removeEventListener('visibilitychange', alVolver)
       clearTimeout(timer)
     }
-  }, [router])
+  }, [router, pathname])
 
-  return null // No dibuja nada, solo vigila
+  return null
 }

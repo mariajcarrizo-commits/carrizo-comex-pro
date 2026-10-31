@@ -4,12 +4,17 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../../../../lib/supabase'
+import { numeroSeguro } from '../../../../lib/tributos'
+
+const CAMPOS_NUMERICOS = ['fob', 'peso_neto', 'peso_bruto', 'honorarios', 'gastos_logisticos', 'flete_seguro', 'derechos_pct', 'iva_pct'] as const
 
 export default function EditarOperacion() {
   const params = useParams()
   const router = useRouter()
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  const [tipo, setTipo] = useState('Importación')
+  const [noEncontrada, setNoEncontrada] = useState(false)
 
   // 1. MEMORIA CENTRAL PERFECTAMENTE ORDENADA
   const [formData, setFormData] = useState({
@@ -22,7 +27,10 @@ export default function EditarOperacion() {
     peso_bruto: 0,
     honorarios: 0,
     tipo_honorario: 'fijo',
-    gastos_logisticos: 0, // 👈 Acá está tu nuevo campo bien definido
+    gastos_logisticos: 0 as number | string,
+    flete_seguro: '' as number | string,
+    derechos_pct: '' as number | string,
+    iva_pct: 21 as number | string,
     docs_afip: false,
     docs_malvina: false,
     docs_factura: false,
@@ -43,7 +51,11 @@ export default function EditarOperacion() {
         .eq('id', params.id)
         .single()
 
+      if (error || !data) {
+        setNoEncontrada(true)
+      }
       if (data) {
+        setTipo(data.tipo || 'Importación')
         setFormData({
           cliente: data.cliente || '',
           estado: data.estado || 'Pendiente',
@@ -54,7 +66,10 @@ export default function EditarOperacion() {
           peso_bruto: data.peso_bruto || 0,
           honorarios: data.honorarios || 0,
           tipo_honorario: data.tipo_honorario || 'fijo',
-          gastos_logisticos: data.gastos_logisticos || 0, // 👈 Lo recuperamos de la base
+          gastos_logisticos: data.gastos_logisticos || 0,
+          flete_seguro: data.flete_seguro ?? (data.tipo !== 'Exportación' && data.gastos_logisticos ? data.gastos_logisticos : ''),
+          derechos_pct: data.derechos_pct ?? '',
+          iva_pct: data.iva_pct ?? 21,
           docs_afip: data.docs_afip || false,
           docs_malvina: data.docs_malvina || false,
           docs_factura: data.docs_factura || false,
@@ -71,7 +86,8 @@ export default function EditarOperacion() {
 
   // 3. FUNCIONES QUE MANEJAN LOS CLICS Y TEXTOS
   const handleChange = (e: any) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value, type } = e.target
+    setFormData({ ...formData, [name]: type === 'number' ? String(value).replace('-', '') : value })
   }
 
   const handleDocChange = (docName: string) => {
@@ -80,9 +96,16 @@ export default function EditarOperacion() {
 
   const guardarCambios = async () => {
     setGuardando(true)
+    // Los inputs devuelven texto: convertimos a número (sin negativos) antes de guardar.
+    const payload: any = { ...formData, fecha_vencimiento: formData.fecha_vencimiento || null }
+    CAMPOS_NUMERICOS.forEach((campo) => {
+      const v = (formData as any)[campo]
+      payload[campo] = v === '' || v === null ? null : numeroSeguro(v)
+    })
+    if (payload.fob === null) payload.fob = 0
     const { error } = await supabase
       .from('operaciones')
-      .update(formData)
+      .update(payload)
       .eq('id', params.id)
 
     if (error) {
@@ -94,6 +117,12 @@ export default function EditarOperacion() {
   }
 
   if (cargando) return <div className="p-8 text-center text-slate-500 font-bold mt-20">Cargando operación...</div>
+  if (noEncontrada) return (
+    <div className="p-8 text-center mt-20">
+      <p className="text-slate-700 font-bold mb-4">No encontramos esta operación o no tenés permiso para editarla.</p>
+      <Link href="/operaciones" className="text-purple-600 font-bold hover:underline">← Volver a Operaciones</Link>
+    </div>
+  )
 
   // 4. EL DISEÑO VISUAL (HTML)
   return (
@@ -134,7 +163,7 @@ export default function EditarOperacion() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Valor FOB (USD)</label>
-                <input type="number" name="fob" value={formData.fob} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                <input type="number" min="0" step="0.01" name="fob" value={formData.fob} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Posición NCM</label>
@@ -173,19 +202,33 @@ export default function EditarOperacion() {
                 </div>
               </div>
 
-              {/* FLETE / GASTOS LOGÍSTICOS */}
-              <div className="col-span-1 md:col-span-2 mt-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">Gastos Logísticos / Flete (USD)</label>
-                <input 
-                  type="number" 
-                  name="gastos_logisticos" 
-                  value={formData.gastos_logisticos} 
-                  onChange={handleChange} 
-                  placeholder="Ej: 300" 
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" 
-                />
-                <p className="text-xs text-slate-500 mt-1">Si lo dejás en 0, el PDF estimará un valor referencial por defecto.</p>
+              {/* DATOS TRIBUTARIOS */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{tipo === 'Exportación' ? 'Derechos de Exportación (%)' : 'Derechos de Importación (%)'}</label>
+                <input type="number" min="0" max="100" step="0.1" name="derechos_pct" value={formData.derechos_pct} onChange={handleChange} placeholder="Ej: 16" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
               </div>
+              {tipo !== 'Exportación' ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Alícuota IVA</label>
+                    <select name="iva_pct" value={String(formData.iva_pct)} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium bg-white focus:ring-2 focus:ring-purple-600 outline-none">
+                      <option value="21">General (21%)</option>
+                      <option value="10.5">Reducida (10,5%)</option>
+                      <option value="0">Exento (0%)</option>
+                    </select>
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Flete Internacional + Seguro (USD)</label>
+                    <input type="number" min="0" step="0.01" name="flete_seguro" value={formData.flete_seguro} onChange={handleChange} placeholder="Ej: 1200" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                    <p className="text-xs text-slate-500 mt-1">Se suma al FOB para obtener el Valor en Aduana (CIF).</p>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Gastos de Terminal y Logística (USD)</label>
+                  <input type="number" min="0" step="0.01" name="gastos_logisticos" value={formData.gastos_logisticos} onChange={handleChange} placeholder="Ej: 300" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 font-medium focus:ring-2 focus:ring-purple-600 outline-none" />
+                </div>
+              )}
 
             </div>
           </div>
@@ -201,7 +244,7 @@ export default function EditarOperacion() {
                 { id: 'docs_packing', label: 'Packing List' },
                 { id: 'docs_origen', label: 'Certificado de Origen' },
                 { id: 'docs_tecnicas', label: 'Certificaciones Técnicas' },
-                { id: 'docs_transporte', label: 'Carta Porte / CRT' },
+                { id: 'docs_transporte', label: 'Doc. Transporte (B/L, AWB, CRT)' },
               ].map((doc) => (
                 <label key={doc.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${(formData as any)[doc.id] ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                   <div className={`w-5 h-5 rounded flex items-center justify-center border ${(formData as any)[doc.id] ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>

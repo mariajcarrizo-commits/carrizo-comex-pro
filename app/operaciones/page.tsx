@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { calcularImportacion, calcularExportacion, calcularHonorarios, formatUsd, formatPct, numeroSeguro } from '../../lib/tributos'
 
 export default function OperacionesDashboard() {
   const [operaciones, setOperaciones] = useState<any[]>([])
@@ -52,7 +53,8 @@ export default function OperacionesDashboard() {
 
   const eliminarOperacion = async (id: string) => {
     if (window.confirm('¿Estás segura de eliminar esta operación?')) {
-      await supabase.from('operaciones').delete().eq('id', id)
+      const { error } = await supabase.from('operaciones').delete().eq('id', id)
+      if (error) alert('No se pudo eliminar la operación: ' + error.message)
       cargarOperaciones()
     }
   }
@@ -99,26 +101,28 @@ export default function OperacionesDashboard() {
     doc.setTextColor(15, 23, 42);
     doc.text(`Resumen de Operación de ${op.tipo}`, 14, 42);
 
-    const fobReal = Number(op.fob) || 0;
-    const montoMuestra = (op.es_muestra === 'Si' && op.muestra_tipo_valor === 'Con Valor') ? (Number(op.muestra_monto) || 0) : 0;
-    const valorBase = fobReal + montoMuestra;
+    const fobReal = numeroSeguro(op.fob);
+    const montoMuestra = (op.es_muestra === 'Si' && op.muestra_tipo_valor === 'Con Valor') ? numeroSeguro(op.muestra_monto) : 0;
+    // Si es muestra con valor y no se cargó FOB, el valor declarado de la muestra es la base. No se suman (evita doble conteo).
+    const valorBase = fobReal > 0 ? fobReal : montoMuestra;
+    const esImpo = op.tipo !== 'Exportación';
+    const derechosInformados = op.derechos_pct !== null && op.derechos_pct !== undefined && op.derechos_pct !== '';
+    const derechosPct = derechosInformados ? numeroSeguro(op.derechos_pct) : 0;
 
     autoTable(doc, {
       startY: 48,
       theme: 'grid',
       headStyles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold' },
       body: [
-        ['Cliente / Razón Social', op.cliente],
+        ['Cliente / Razón Social', op.cliente || '-'],
         ['CUIT', op.cuit || 'No especificado'],
-        // ✨ NUEVA LÍNEA EN EL PDF: ORIGEN Y DESTINO
         ['Origen / Destino', op.pais || 'No especificado'],
-        ['Mercadería', op.producto],
-        ['Posición NCM', op.posicion_ncm],
+        ['Mercadería', op.producto || '-'],
+        ['Posición NCM / SIM', op.posicion_ncm || '-'],
         ['¿Es Muestra?', op.es_muestra === 'Si' ? `Sí (${op.muestra_tipo_valor})` : 'No'],
-        ['Valor FOB Declarado', `USD ${fobReal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-        ['Valor Muestra Declarada', `USD ${montoMuestra.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-        ['Base Imponible (FOB + Muestra)', `USD ${valorBase.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-        ['Peso (Neto / Bruto)', `${op.peso_neto || 0} kg / ${op.peso_bruto || 0} kg`]
+        ['Valor FOB Declarado', formatUsd(fobReal)],
+        ...(montoMuestra > 0 ? [['Valor Declarado de la Muestra', formatUsd(montoMuestra)]] : []),
+        ['Peso (Neto / Bruto)', `${numeroSeguro(op.peso_neto)} kg / ${numeroSeguro(op.peso_bruto)} kg`]
       ],
     });
 
@@ -129,60 +133,45 @@ export default function OperacionesDashboard() {
       doc.setTextColor(15, 23, 42);
       doc.text('Estimación de Costos y Tributos (Referencial)', 14, currentY);
 
-      let honorariosCalculados = 0;
-      if (op.honorarios > 0) {
-        if (op.tipo_honorario === 'porcentaje') {
-           honorariosCalculados = valorBase * (op.honorarios / 100);
-        } else {
-           honorariosCalculados = Number(op.honorarios);
-        }
-      } else {
-        honorariosCalculados = Math.max(valorBase * 0.01, 250); 
-      }
+      const honorarios = calcularHonorarios(op.honorarios, op.tipo_honorario, valorBase);
+      const notas: string[] = [];
+      let tablaBody: any[] = [];
 
-      let tablaBody = [];
-      
-      if (op.tipo === 'Exportación') {
-        const derechosExpo = valorBase * 0.045;
-        const gastosTerminal = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : 300; 
-        const totalCostosExpo = derechosExpo + honorariosCalculados + gastosTerminal;
-        const reintegro = valorBase * 0.03;
-
+      if (!esImpo) {
+        const r = calcularExportacion({ fob: valorBase, derechosPct, gastos: numeroSeguro(op.gastos_logisticos), honorarios });
+        if (!derechosInformados) notas.push('Alícuota de derechos de exportación no informada: editá la operación para cargarla.');
         tablaBody = [
-          ['Valor FOB Declarado', `USD ${fobReal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Valor Muestra Declarada', `USD ${montoMuestra.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Derechos de Exportación (Est. 4.5%)', `USD ${derechosExpo.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Gastos de Terminal y Logística', `USD ${gastosTerminal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Honorarios Profesionales Despachante', `USD ${honorariosCalculados.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['', ''], 
-          ['TOTAL ESTIMADO A PAGAR', `USD ${totalCostosExpo.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Beneficio: Reintegros de Expo (Est. 3%)', `+ USD ${reintegro.toLocaleString('en-US', {minimumFractionDigits: 2})}`]
+          ['Valor FOB', formatUsd(r.fob)],
+          [`Derechos de Exportación (${derechosInformados ? formatPct(derechosPct) : 'no informado'})`, formatUsd(r.derechos)],
+          ['Gastos de Terminal y Logística', formatUsd(r.gastos)],
+          ['Honorarios Profesionales Despachante', honorarios > 0 ? formatUsd(honorarios) : 'A convenir'],
+          ['', ''],
+          ['TOTAL ESTIMADO A PAGAR', formatUsd(r.total)],
         ];
       } else {
-        const seguroFlete = op.gastos_logisticos > 0 ? Number(op.gastos_logisticos) : (valorBase * 0.05);
-        const cif = valorBase + seguroFlete;
-        const derechos = cif * 0.16; 
-        const tasaEst = cif * 0.03; 
-        const baseIva = cif + derechos + tasaEst;
-        const iva = baseIva * 0.21;
-        const ivaAdic = baseIva * 0.20;
-        const ganancias = baseIva * 0.06;
-        const iibb = baseIva * 0.025;
-        const totalTributos = derechos + tasaEst + iva + ivaAdic + ganancias + iibb;
-        const totalOperacion = cif + totalTributos + honorariosCalculados;
-
+        // Flete + seguro: campo nuevo; si no existe, se usa el viejo "gastos logísticos" (operaciones anteriores).
+        const fleteSeguro = op.flete_seguro !== null && op.flete_seguro !== undefined
+          ? numeroSeguro(op.flete_seguro)
+          : numeroSeguro(op.gastos_logisticos);
+        if (fleteSeguro === 0) notas.push('Flete y seguro no informados: el Valor en Aduana puede estar subestimado.');
+        if (!derechosInformados) notas.push('Alícuota de derechos de importación no informada: editá la operación para cargarla.');
+        const ivaPct = op.iva_pct !== null && op.iva_pct !== undefined ? numeroSeguro(op.iva_pct) : 21;
+        const r = calcularImportacion({ fob: valorBase, flete: fleteSeguro, seguro: 0, derechosPct, ivaPct, honorarios });
+        if (r.topeAplicado) notas.push('Tasa de Estadística con tope del Decreto 1140/2024.');
         tablaBody = [
-          ['Valor FOB Declarado', `USD ${fobReal.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Valor Muestra Declarada', `USD ${montoMuestra.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Flete Internacional y Seguro', `USD ${seguroFlete.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Base Imponible (Valor en Aduana / CIF)', `USD ${cif.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Derechos (Est. 16%) + Tasa Est. (3%)', `USD ${(derechos + tasaEst).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['IVA (21%) + IVA Adicional (20%)', `USD ${(iva + ivaAdic).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Anticipo Ganancias (6%) + IIBB (2.5%)', `USD ${(ganancias + iibb).toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Total Tributos Aduaneros (Aprox.)', `USD ${totalTributos.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['Honorarios Profesionales Despachante', `USD ${honorariosCalculados.toLocaleString('en-US', {minimumFractionDigits: 2})}`],
-          ['', ''], 
-          ['TOTAL ESTIMADO DE LA OPERACIÓN', `USD ${totalOperacion.toLocaleString('en-US', {minimumFractionDigits: 2})}`]
+          ['Valor FOB', formatUsd(valorBase)],
+          ['Flete Internacional y Seguro', formatUsd(fleteSeguro)],
+          ['Valor en Aduana (CIF)', formatUsd(r.cif)],
+          [`Derechos de Importación (${derechosInformados ? formatPct(derechosPct) : 'no informado'})`, formatUsd(r.derechos)],
+          [`Tasa de Estadística (3%${r.topeAplicado ? ', con tope' : ''})`, formatUsd(r.tasaEstadistica)],
+          [`IVA (${formatPct(ivaPct)})`, formatUsd(r.iva)],
+          [`Percepción IVA (${formatPct(r.percepcionIvaPct)})`, formatUsd(r.percepcionIva)],
+          [`Percepciones Ganancias (${formatPct(r.gananciasPct)}) + IIBB (${formatPct(r.iibbPct)})`, formatUsd(r.percepcionGanancias + r.percepcionIibb)],
+          ['Fondos a depositar en Aduana', formatUsd(r.fondosADepositar)],
+          ['Honorarios Profesionales Despachante', honorarios > 0 ? formatUsd(honorarios) : 'A convenir'],
+          ['', ''],
+          ['TOTAL ESTIMADO DE DESEMBOLSO', formatUsd(r.desembolsoTotal)],
+          ['Costo real (sin IVA ni percepciones recuperables)', formatUsd(r.costoReal)],
         ];
       }
 
@@ -190,31 +179,34 @@ export default function OperacionesDashboard() {
         startY: currentY + 5,
         theme: 'plain',
         styles: { fontSize: 9, cellPadding: 2 },
-        columnStyles: { 
-          0: { fontStyle: 'bold', textColor: [71, 85, 105] }, 
-          1: { halign: 'right', textColor: [15, 23, 42] } 
+        columnStyles: {
+          0: { fontStyle: 'bold', textColor: [71, 85, 105] },
+          1: { halign: 'right', textColor: [15, 23, 42] }
         },
         body: tablaBody,
         didParseCell: function(data) {
-          const contenidoFila = String(data.row.raw[0]);
+          const contenidoFila = String((data.row.raw as any)[0]);
           if (contenidoFila.includes('TOTAL ESTIMADO')) {
             data.cell.styles.fontStyle = 'bold';
             data.cell.styles.fillColor = [241, 245, 249];
           }
-          if (contenidoFila.includes('Beneficio:')) {
+          if (contenidoFila.startsWith('Costo real')) {
             data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.textColor = [22, 101, 52]; 
+            data.cell.styles.textColor = [22, 101, 52];
           }
         }
       });
 
       currentY = (doc as any).lastAutoTable.finalY + 8;
-      
+
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text('*Nota: Los valores expresados son estimaciones referenciales basadas en alícuotas generales.', 14, currentY);
-      doc.text('La liquidación tributaria exacta se realizará mediante el Sistema Informático Malvina (SIM).', 14, currentY + 4);
-      currentY += 15;
+      const lineas = [
+        ...notas.map(n => `* ${n}`),
+        '*Valores estimativos. La liquidación tributaria oficial se realiza en el Sistema Informático Malvina (SIM).',
+      ];
+      lineas.forEach((l, i) => doc.text(l, 14, currentY + i * 4));
+      currentY += lineas.length * 4 + 10;
     }
 
     doc.setFontSize(14);
@@ -241,7 +233,7 @@ export default function OperacionesDashboard() {
         ['Packing List', getEstadoData(op.docs_packing)],
         ['Certificado de Origen', getEstadoData(op.docs_origen)],
         ['Certificaciones Técnicas', getEstadoData(op.docs_tecnicas)],
-        ['Carta Porte / CRT', getEstadoData(op.docs_transporte)],
+        ['Doc. Transporte (B/L, AWB, CRT)', getEstadoData(op.docs_transporte)],
       ],
     });
 
@@ -251,7 +243,7 @@ export default function OperacionesDashboard() {
     doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, pageHeight - 15);
     doc.text(`Proforma ID: ${shortId}`, 14, pageHeight - 10);
 
-    doc.save(`Resumen_${op.cliente}_${shortId}.pdf`);
+    doc.save(`Resumen_${String(op.cliente || 'operacion').replace(/[^\w\-]+/g, '_')}_${shortId}.pdf`);
   }
 
   return (
