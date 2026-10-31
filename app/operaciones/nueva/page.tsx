@@ -86,6 +86,30 @@ export default function NuevaOperacion() {
   const [analisisIA, setAnalisisIA] = useState<AnalisisIA | null>(null)
   const [errorIA, setErrorIA] = useState('')
   const [iaCargando, setIaCargando] = useState(false)
+  // Respuestas a los "datos faltantes" que pide la IA, para recalcular sin volver atrás.
+  const [respuestasFaltantes, setRespuestasFaltantes] = useState<Record<number, string>>({})
+
+  const hayRespuestas = Object.values(respuestasFaltantes).some(v => v.trim() !== '')
+
+  const recalcularConDatos = () => {
+    if (!analisisIA) return
+    const detalles = analisisIA.datos_faltantes
+      .map((dato, i) => {
+        const valor = (respuestasFaltantes[i] || '').trim()
+        if (!valor) return null
+        // Usamos solo la parte antes del paréntesis como etiqueta (ej. "Tipo específico de metal").
+        const etiqueta = dato.split('(')[0].trim().replace(/[.:]$/, '')
+        return `${etiqueta}: ${valor}`
+      })
+      .filter(Boolean)
+      .join('; ')
+    if (!detalles) return
+    const base = formData.productoDescripcion.trim().replace(/[.;]$/, '')
+    const nuevaDescripcion = `${base}. ${detalles}.`.slice(0, 1500)
+    // La descripción ampliada queda guardada en la operación.
+    setFormData(prev => ({ ...prev, productoDescripcion: nuevaDescripcion, ncm: '' }))
+    sugerirNcmConIA(nuevaDescripcion)
+  }
 
   const esExpo = formData.tipo === 'Exportación'
 
@@ -145,10 +169,12 @@ export default function NuevaOperacion() {
   }
   const anteriorPaso = () => { setErrorPaso(''); if (paso > 1) setPaso(paso - 1) }
 
-  const sugerirNcmConIA = async () => {
+  const sugerirNcmConIA = async (descripcionOverride?: string) => {
+    const descripcion = descripcionOverride ?? formData.productoDescripcion
     setIaCargando(true)
     setErrorIA('')
     setAnalisisIA(null)
+    setRespuestasFaltantes({})
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/clasificar', {
@@ -157,7 +183,7 @@ export default function NuevaOperacion() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.access_token ?? ''}`,
         },
-        body: JSON.stringify({ descripcion: formData.productoDescripcion, tipo: formData.tipo })
+        body: JSON.stringify({ descripcion, tipo: formData.tipo })
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -472,7 +498,7 @@ export default function NuevaOperacion() {
                   <h3 className="text-sm font-extrabold text-purple-900 mb-2 flex items-center gap-2"> ✨ Agente Aduanero (IA) </h3>
                   <p className="text-sm text-purple-700 mb-4 font-medium relative z-10"> Analizando: <span className="italic font-bold">"{formData.productoDescripcion || 'Sin descripción'}"</span> </p>
 
-                  <button type="button" onClick={sugerirNcmConIA} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-4 rounded-xl disabled:opacity-50 transition-all shadow-md text-lg">
+                  <button type="button" onClick={() => sugerirNcmConIA()} disabled={iaCargando || !formData.productoDescripcion} className="w-full relative z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-4 rounded-xl disabled:opacity-50 transition-all shadow-md text-lg">
                     {iaCargando ? <><span className="animate-spin text-xl inline-block">⚙️</span> Analizando mercadería...</> : <>Sugerir posición arancelaria</>}
                   </button>
 
@@ -508,6 +534,37 @@ export default function NuevaOperacion() {
                         </div>
                       </div>
 
+                      {analisisIA.datos_faltantes.length > 0 && (
+                        <div className="bg-white border-2 border-dashed border-purple-300 rounded-xl p-4 md:p-5">
+                          <p className="text-xs font-extrabold uppercase tracking-wider text-purple-900 mb-1">🔍 Para clasificar con más certeza, falta saber</p>
+                          <p className="text-xs text-slate-500 mb-4">Completá lo que sepas y recalculá. Es opcional: también podés continuar con la posición elegida.</p>
+                          <div className="space-y-3">
+                            {analisisIA.datos_faltantes.map((dato, i) => (
+                              <div key={i}>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">{dato}</label>
+                                <input
+                                  type="text"
+                                  value={respuestasFaltantes[i] || ''}
+                                  onChange={(e) => setRespuestasFaltantes(prev => ({ ...prev, [i]: e.target.value }))}
+                                  onKeyDown={(e) => { if (e.key === 'Enter' && hayRespuestas && !iaCargando) { e.preventDefault(); recalcularConDatos() } }}
+                                  placeholder="Escribí el dato (opcional)"
+                                  maxLength={200}
+                                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:ring-2 focus:ring-purple-600 outline-none"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={recalcularConDatos}
+                            disabled={!hayRespuestas || iaCargando}
+                            className="mt-4 w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm py-2.5 px-5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            {iaCargando ? 'Recalculando...' : '🔄 Recalcular con estos datos'}
+                          </button>
+                        </div>
+                      )}
+
                       <div className="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-4">
                         <p className="text-xs font-extrabold uppercase tracking-wider text-orange-900 mb-2">🚨 Terceros organismos e intervenciones</p>
                         {analisisIA.intervenciones.length === 0 ? (
@@ -525,15 +582,6 @@ export default function NuevaOperacion() {
                         <div className="bg-emerald-50 border-l-4 border-emerald-500 rounded-lg p-4">
                           <p className="text-xs font-extrabold uppercase tracking-wider text-emerald-900 mb-2">💰 Tributación</p>
                           <p className="text-sm text-emerald-900 whitespace-pre-line">{analisisIA.tributacion}</p>
-                        </div>
-                      )}
-
-                      {analisisIA.datos_faltantes.length > 0 && (
-                        <div className="bg-slate-50 border-l-4 border-slate-400 rounded-lg p-4">
-                          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">🔍 Para clasificar con más certeza, falta saber</p>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {analisisIA.datos_faltantes.map((d, i) => <li key={i} className="text-sm text-slate-700">{d}</li>)}
-                          </ul>
                         </div>
                       )}
 
