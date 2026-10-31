@@ -108,7 +108,8 @@ export default function PortalCliente() {
                       <td className="p-4">
                         <div className="flex flex-col items-start">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
-                            op.estado === 'Finalizado' ? 'bg-green-100 text-green-800' : 
+                            op.estado === 'Finalizado' || op.estado === 'Aprobada / Oficializada' ? 'bg-green-100 text-green-800' :
+                            op.estado === 'Con Observaciones' ? 'bg-red-100 text-red-800' :
                             op.estado === 'En Curso' ? 'bg-amber-100 text-amber-800' : 
                             'bg-slate-100 text-slate-800'
                           }`}>

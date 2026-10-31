@@ -3,275 +3,291 @@
 import { useState } from 'react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import {
+  calcularImportacion,
+  formatUsd,
+  formatPct,
+  numeroSeguro,
+  PERCEPCION_GANANCIAS_DEFAULT,
+  PERCEPCION_IIBB_DEFAULT,
+  TASA_ESTADISTICA_PCT,
+} from '../../lib/tributos'
 
-// Estilo de fuente monoespaciada tipo calculadora
-const calculatorMono = { fontFamily: '"Roboto Mono", "Courier New", monospace' };
+const calculatorMono = { fontFamily: '"Roboto Mono", "Courier New", monospace' }
+
+const inputClass =
+  'w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white'
 
 export default function CalculadoraTributos() {
+  // Los campos se guardan como texto para que el usuario pueda borrar y tipear libremente.
   const [inputs, setInputs] = useState({
-    fob: 0,
-    flete: 0,
-    seguro: 0,
-    arancel_pct: 16, 
-    iva_pct: 21,    
-    honorarios: 0,
+    fob: '',
+    flete: '',
+    seguro: '',
+    derechosPct: '16',
+    ivaPct: '21',
+    gananciasPct: String(PERCEPCION_GANANCIAS_DEFAULT),
+    iibbPct: String(PERCEPCION_IIBB_DEFAULT),
+    honorarios: '',
+  })
+  const [opciones, setOpciones] = useState({
+    tasaEstadisticaExenta: false,
+    certificadoExclusionIva: false,
+    certificadoExclusionGanancias: false,
   })
 
-  const handleInputChange = (e: any) => {
-    const { name, value } = e.target;
-    setInputs((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    // No se aceptan negativos: se descarta el signo menos.
+    setInputs(prev => ({ ...prev, [name]: value.replace('-', '') }))
   }
 
-  const calcData = () => {
-    const cif = inputs.fob + inputs.flete + inputs.seguro;
-    const derechos = cif * (inputs.arancel_pct / 100);
-    const tasa_est = cif * 0.03; 
-    const base_afip = cif + derechos + tasa_est;
+  const toggle = (name: keyof typeof opciones) => setOpciones(prev => ({ ...prev, [name]: !prev[name] }))
 
-    const tributo_iva = base_afip * (inputs.iva_pct / 100);
-    const perc_iva_20 = base_afip * 0.20; 
-    const perc_gan_6 = base_afip * 0.06;  
-    const perc_iibb_2_5 = base_afip * 0.025; 
+  const data = calcularImportacion({
+    fob: numeroSeguro(inputs.fob),
+    flete: numeroSeguro(inputs.flete),
+    seguro: numeroSeguro(inputs.seguro),
+    derechosPct: numeroSeguro(inputs.derechosPct),
+    ivaPct: numeroSeguro(inputs.ivaPct),
+    gananciasPct: numeroSeguro(inputs.gananciasPct),
+    iibbPct: numeroSeguro(inputs.iibbPct),
+    honorarios: numeroSeguro(inputs.honorarios),
+    ...opciones,
+  })
 
-    const total_tributos = derechos + tasa_est + tributo_iva + perc_iva_20 + perc_gan_6 + perc_iibb_2_5;
-    const honorarios = inputs.honorarios;
-    const costo_total_estimado = inputs.fob + inputs.flete + inputs.seguro + total_tributos + honorarios;
-
-    return {
-      cif, derechos, tasa_est, base_afip, tributo_iva, perc_iva_20, perc_gan_6, perc_iibb_2_5, total_tributos, costo_total_estimado,
-    };
-  }
-
-  const data = calcData();
-  const formatUsd = (value: number) => `U$S ${value.toFixed(2)}`;
+  const sinDatos = data.cif === 0
 
   const descargarPDF = () => {
-    const doc = new jsPDF();
-    const docWidth = doc.internal.pageSize.getWidth();
-    
-    // Encabezado
-    doc.setFontSize(22);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Presupuesto de Operación', 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, 28);
-    doc.text('Estimación rápida de costos aduaneros y tributarios (Valores en USD)', 14, 34);
+    const doc = new jsPDF()
 
-    doc.setDrawColor(220, 220, 220);
-    doc.line(14, 38, 196, 38);
+    doc.setFontSize(22)
+    doc.setTextColor(30, 41, 59)
+    doc.text('Presupuesto de Operación', 14, 20)
 
-    // Tabla 1: Valores Declarados
+    doc.setFontSize(10)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-AR')}`, 14, 28)
+    doc.text('Estimación de costos de nacionalización (valores en USD)', 14, 34)
+
+    doc.setDrawColor(220, 220, 220)
+    doc.line(14, 38, 196, 38)
+
     autoTable(doc, {
       startY: 45,
       theme: 'grid',
       headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
       bodyStyles: { textColor: [71, 85, 105] },
-      head: [['Valores de la Mercadería', 'Monto Declarado']],
+      head: [['Valores de la Mercadería', 'Monto']],
       body: [
-        ['Valor FOB', formatUsd(inputs.fob)],
-        ['Flete Internacional', formatUsd(inputs.flete)],
-        ['Seguro', formatUsd(inputs.seguro)],
-        [{ content: 'Base Imponible (CIF)', styles: { fontStyle: 'bold', textColor: [30, 41, 59] } }, { content: formatUsd(data.cif), styles: { fontStyle: 'bold', textColor: [30, 41, 59] } }]
+        ['Valor FOB', formatUsd(numeroSeguro(inputs.fob))],
+        ['Flete Internacional', formatUsd(numeroSeguro(inputs.flete))],
+        ['Seguro', formatUsd(numeroSeguro(inputs.seguro))],
+        [{ content: 'Valor en Aduana (CIF)', styles: { fontStyle: 'bold', textColor: [30, 41, 59] } }, { content: formatUsd(data.cif), styles: { fontStyle: 'bold', textColor: [30, 41, 59] } }],
       ],
-    });
+    })
 
-    // Tabla 2: Liquidación de Tributos
-    const alturaActual = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Liquidación de Tributos (Aduana + AFIP)', 14, alturaActual);
+    let y = (doc as any).lastAutoTable.finalY + 10
+    doc.setFontSize(14)
+    doc.setTextColor(30, 41, 59)
+    doc.text('Liquidación estimada de tributos', 14, y)
 
     autoTable(doc, {
-      startY: alturaActual + 5,
+      startY: y + 5,
       theme: 'striped',
       headStyles: { fillColor: [109, 40, 217], textColor: [255, 255, 255], fontStyle: 'bold' },
       bodyStyles: { textColor: [71, 85, 105] },
-      head: [['Concepto', 'Alícuota', 'Importe']],
+      head: [['Concepto', 'Alícuota', 'Importe', 'Naturaleza']],
       body: [
-        ['Derechos de Importación', `${inputs.arancel_pct}%`, formatUsd(data.derechos)],
-        ['Tasa de Estadística', '3%', formatUsd(data.tasa_est)],
-        ['IVA', `${inputs.iva_pct}%`, formatUsd(data.tributo_iva)],
-        ['Percepción IVA', '20%', formatUsd(data.perc_iva_20)],
-        ['Anticipo Ganancias', '6%', formatUsd(data.perc_gan_6)],
-        ['Percepción Ingresos Brutos', '2.5%', formatUsd(data.perc_iibb_2_5)],
-        [{ content: 'Total Tributos y Tasas', colSpan: 2, styles: { fontStyle: 'bold', textColor: [220, 38, 38] } }, { content: formatUsd(data.total_tributos), styles: { fontStyle: 'bold', textColor: [220, 38, 38] } }]
+        ['Derechos de Importación', formatPct(numeroSeguro(inputs.derechosPct)), formatUsd(data.derechos), 'Costo'],
+        ['Tasa de Estadística', opciones.tasaEstadisticaExenta ? 'Exenta' : `${TASA_ESTADISTICA_PCT}%${data.topeAplicado ? ' (con tope)' : ''}`, formatUsd(data.tasaEstadistica), 'Costo'],
+        ['IVA', formatPct(numeroSeguro(inputs.ivaPct)), formatUsd(data.iva), 'Crédito fiscal'],
+        ['Percepción IVA', formatPct(data.percepcionIvaPct), formatUsd(data.percepcionIva), 'Pago a cuenta'],
+        ['Percepción Ganancias', formatPct(data.gananciasPct), formatUsd(data.percepcionGanancias), 'Pago a cuenta'],
+        ['Percepción Ingresos Brutos', formatPct(data.iibbPct), formatUsd(data.percepcionIibb), 'Pago a cuenta'],
+        [{ content: 'Fondos a depositar en Aduana', colSpan: 2, styles: { fontStyle: 'bold', textColor: [30, 41, 59] } }, { content: formatUsd(data.fondosADepositar), styles: { fontStyle: 'bold', textColor: [30, 41, 59] } }, ''],
       ],
-    });
+    })
 
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
-    
-    doc.setFontSize(12);
-    doc.setTextColor(30, 41, 59);
-    doc.text(`Honorarios Profesionales: ${formatUsd(inputs.honorarios)}`, 14, finalY);
+    y = (doc as any).lastAutoTable.finalY + 8
+    autoTable(doc, {
+      startY: y,
+      theme: 'plain',
+      styles: { fontSize: 11 },
+      columnStyles: { 0: { fontStyle: 'bold', textColor: [30, 41, 59] }, 1: { halign: 'right', fontStyle: 'bold' } },
+      body: [
+        ['Honorarios profesionales', formatUsd(data.honorarios)],
+        ['Desembolso total de caja (mercadería + depósitos + honorarios)', formatUsd(data.desembolsoTotal)],
+        ['Costo real de nacionalización (sin IVA ni percepciones recuperables)', formatUsd(data.costoReal)],
+      ],
+    })
 
-    doc.setFillColor(241, 245, 249);
-    doc.rect(14, finalY + 5, 182, 25, 'F');
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 41, 59);
-    doc.text('COSTO TOTAL ESTIMADO:', 18, finalY + 13);
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text('(Mercadería + Tributos + Honorarios)', 18, finalY + 18);
+    y = (doc as any).lastAutoTable.finalY + 8
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    const notas = [
+      '* Valores estimativos, sujetos a verificación aduanera y al tipo de cambio del día de oficialización. La liquidación oficial es la del SIM (Malvina).',
+      '* Tasa de Estadística con topes del Decreto 1140/2024. Base de IVA y percepciones: CIF + Derechos + Tasa de Estadística.',
+      '* "Costo real" supone un Responsable Inscripto que computa el IVA como crédito fiscal y las percepciones como pagos a cuenta.',
+    ]
+    notas.forEach((n, i) => doc.text(doc.splitTextToSize(n, 182), 14, y + i * 8))
 
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(16, 185, 129); 
-    doc.text(formatUsd(data.costo_total_estimado), 190, finalY + 20, { align: 'right' });
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(150, 150, 150);
-    doc.text('* Los valores expresados son estimativos y sujetos a verificación aduanera y tipo de cambio oficial del día de oficialización.', 14, finalY + 35);
-
-    doc.save(`Cotizacion_Impo_${new Date().getTime()}.pdf`);
+    doc.save(`Presupuesto_Impo_${new Date().getTime()}.pdf`)
   }
+
+  const Fila = ({ label, valor, color = 'text-[#A78BFA]', nota }: { label: string; valor: number; color?: string; nota?: string }) => (
+    <div className={`flex justify-between items-start gap-3 ${color}`}>
+      <span className="text-sm md:text-base font-medium">
+        {label}
+        {nota && <span className="block text-xs text-[#94A3B8] font-normal">{nota}</span>}
+      </span>
+      <span className="text-sm md:text-lg font-semibold whitespace-nowrap" style={calculatorMono}>{formatUsd(valor)}</span>
+    </div>
+  )
+
+  const Toggle = ({ name, label, ayuda }: { name: keyof typeof opciones; label: string; ayuda: string }) => (
+    <label className="flex items-start gap-3 cursor-pointer select-none">
+      <input type="checkbox" checked={opciones[name]} onChange={() => toggle(name)} className="mt-1 w-4 h-4 accent-[#7C3AED]" />
+      <span>
+        <span className="block text-sm font-semibold text-[#374151]">{label}</span>
+        <span className="block text-xs text-[#6B7280]">{ayuda}</span>
+      </span>
+    </label>
+  )
 
   return (
     <div className="min-h-screen bg-[#F5F7F9] p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        
-        <div className="mb-8 flex justify-between items-end">
+        <div className="mb-8 flex justify-between items-end gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#0D1B2A] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Calculadora de Tributos</h1>
-            <p className="text-[#3A3E46] font-medium text-sm md:text-base">Estimación rápida de costos de nacionalización (Valores en USD)</p>
+            <p className="text-[#3A3E46] font-medium text-sm md:text-base">Estimación de costos de nacionalización (valores en USD)</p>
           </div>
-          {/* BOTÓN DESKTOP (Solo visible en PC) */}
-          <button 
+          <button
             onClick={descargarPDF}
-            className="hidden md:flex items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all"
+            disabled={sinDatos}
+            className="hidden md:flex items-center gap-2 bg-[#10B981] hover:bg-[#059669] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all"
           >
             📄 Descargar Presupuesto
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start">
-          
           {/* --- PANEL IZQUIERDO --- */}
           <div className="bg-white p-6 md:p-10 rounded-3xl shadow-lg border border-[#E9EEF4]">
             <h2 className="text-xl md:text-2xl font-bold text-[#6D28D9] mb-6 md:mb-8">Valores de la Mercadería</h2>
-            
+
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-[#4B5563] mb-2">Valor FOB (USD)</label>
-                <input type="number" name="fob" placeholder="0.00" onChange={handleInputChange} className="w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-[#4B5563] mb-2">Flete (USD)</label>
-                <input type="number" name="flete" placeholder="0.00" onChange={handleInputChange} className="w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white" />
+              {([
+                ['fob', 'Valor FOB (USD)'],
+                ['flete', 'Flete Internacional (USD)'],
+                ['seguro', 'Seguro (USD)'],
+              ] as const).map(([name, label]) => (
+                <div key={name}>
+                  <label className="block text-sm font-semibold text-[#4B5563] mb-2">{label}</label>
+                  <input type="number" inputMode="decimal" min="0" step="0.01" name={name} value={inputs[name]} placeholder="0,00" onChange={handleInputChange} className={inputClass} />
+                </div>
+              ))}
+
+              <div className="border-t border-[#E5E7EB] pt-6 mt-6 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#4B5563] mb-2">Derechos de Importación (%)</label>
+                  <input type="number" inputMode="decimal" min="0" max="100" step="0.1" name="derechosPct" value={inputs.derechosPct} onChange={handleInputChange} className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#4B5563] mb-2">Alícuota IVA</label>
+                  <select name="ivaPct" value={inputs.ivaPct} onChange={handleInputChange} className={inputClass}>
+                    <option value="21">General (21%)</option>
+                    <option value="10.5">Reducida (10,5%)</option>
+                    <option value="0">Exento (0%)</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-[#4B5563] mb-2">Seguro (USD)</label>
-                <input type="number" name="seguro" placeholder="0.00" onChange={handleInputChange} className="w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#4B5563] mb-2">Percepción Ganancias (%)</label>
+                  <input type="number" inputMode="decimal" min="0" step="0.1" name="gananciasPct" value={inputs.gananciasPct} onChange={handleInputChange} className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#4B5563] mb-2">Percepción IIBB (%)</label>
+                  <input type="number" inputMode="decimal" min="0" step="0.1" name="iibbPct" value={inputs.iibbPct} onChange={handleInputChange} className={inputClass} />
+                </div>
               </div>
 
-              <div className="border-t border-[#E5E7EB] pt-6 mt-6">
-                <label className="block text-sm font-semibold text-[#4B5563] mb-2">Derechos de Impo (Arancel %)</label>
-                <input type="number" name="arancel_pct" value={inputs.arancel_pct} onChange={handleInputChange} className="w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#4B5563] mb-2">Tasa IVA (%)</label>
-                <select name="iva_pct" value={inputs.iva_pct} onChange={handleInputChange} className="w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white">
-                  <option value="21">General (21%)</option>
-                  <option value="10.5">Reducido (10.5%)</option>
-                  <option value="0">Exento (0%)</option>
-                </select>
+              <div className="bg-[#F8F7FF] border border-[#EDE9FE] rounded-2xl p-4 space-y-3">
+                <Toggle name="tasaEstadisticaExenta" label="Tasa de Estadística exenta" ayuda="Ej.: origen con acuerdo preferencial. Verificar caso por caso." />
+                <Toggle name="certificadoExclusionIva" label="Certificado de exclusión de percepción de IVA" ayuda="El importador está excluido del régimen de percepción de IVA." />
+                <Toggle name="certificadoExclusionGanancias" label="Certificado de exclusión de percepción de Ganancias" ayuda="El importador está excluido del régimen de percepción de Ganancias." />
               </div>
 
               <div className="border-t border-[#E5E7EB] pt-6 mt-6">
                 <label className="block text-sm font-semibold text-[#6D28D9] mb-2">Honorarios Despachante (USD)</label>
-                <input type="number" name="honorarios" placeholder="0.00" onChange={handleInputChange} className="w-full px-5 py-3 border border-[#D1D5DB] rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] outline-none transition bg-white" />
+                <input type="number" inputMode="decimal" min="0" step="0.01" name="honorarios" value={inputs.honorarios} placeholder="0,00" onChange={handleInputChange} className={inputClass} />
               </div>
-
             </div>
           </div>
 
           {/* --- PANEL DERECHO --- */}
-          <div className="bg-[#121A30] p-6 md:p-10 rounded-3xl text-white shadow-xl space-y-6 relative overflow-hidden flex flex-col justify-between h-full">
-            <div>
-              <div className="absolute top-0 right-0 w-80 h-80 bg-[#7C3AED] rounded-full blur-[120px] opacity-25 -mr-40 -mt-40"></div>
-              
-              <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 relative z-10">Resumen de Liquidación</h2>
-              
-              <div className="relative z-10 space-y-4 md:space-y-5">
-                <div className="flex justify-between items-center text-[#E1E7EF]">
-                  <span className="text-sm md:text-lg font-medium">Base Imponible (CIF):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.cif)}</span>
-                </div>
+          <div className="bg-[#121A30] p-6 md:p-10 rounded-3xl text-white shadow-xl relative overflow-hidden flex flex-col justify-between h-full">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#7C3AED] rounded-full blur-[120px] opacity-25 -mr-40 -mt-40 pointer-events-none"></div>
 
-                <div className="flex justify-between items-center text-[#A78BFA]">
-                  <span className="text-sm md:text-lg font-medium">Derechos de Impo ({inputs.arancel_pct}%):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.derechos)}</span>
-                </div>
+            <div className="relative z-10 space-y-4">
+              <h2 className="text-xl md:text-2xl font-bold mb-4">Resumen de Liquidación</h2>
 
-                <div className="flex justify-between items-center text-[#A78BFA]">
-                  <span className="text-sm md:text-lg font-medium">Tasa de Estadística (3%):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.tasa_est)}</span>
-                </div>
+              <Fila label="Valor en Aduana (CIF)" valor={data.cif} color="text-[#E1E7EF]" />
 
-                <div className="flex justify-between items-center text-[#E1E7EF] pt-2 border-t border-[#2A344C]">
-                  <span className="text-sm md:text-lg font-medium">IVA ({inputs.iva_pct}%):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.tributo_iva)}</span>
-                </div>
+              <div className="pt-3 border-t border-[#2A344C] space-y-3">
+                <p className="text-xs uppercase tracking-wider text-[#94A3B8] font-bold">Tributos (costo)</p>
+                <Fila label={`Derechos de Importación (${formatPct(numeroSeguro(inputs.derechosPct))})`} valor={data.derechos} />
+                <Fila
+                  label={opciones.tasaEstadisticaExenta ? 'Tasa de Estadística (exenta)' : `Tasa de Estadística (${TASA_ESTADISTICA_PCT}%)`}
+                  valor={data.tasaEstadistica}
+                  nota={data.topeAplicado ? `Tope Dto. 1140/2024 aplicado (sin tope: ${formatUsd(data.tasaEstadisticaSinTope)})` : undefined}
+                />
+              </div>
 
-                <div className="flex justify-between items-center text-[#A78BFA]">
-                  <span className="text-sm md:text-lg font-medium">Percepción IVA (20%):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_iva_20)}</span>
-                </div>
+              <div className="pt-3 border-t border-[#2A344C] space-y-3">
+                <p className="text-xs uppercase tracking-wider text-[#94A3B8] font-bold">IVA y percepciones (recuperables)</p>
+                <Fila label={`IVA (${formatPct(numeroSeguro(inputs.ivaPct))})`} valor={data.iva} color="text-[#E1E7EF]" />
+                <Fila label={`Percepción IVA (${formatPct(data.percepcionIvaPct)})`} valor={data.percepcionIva} />
+                <Fila label={`Percepción Ganancias (${formatPct(data.gananciasPct)})`} valor={data.percepcionGanancias} />
+                <Fila label={`Percepción IIBB (${formatPct(data.iibbPct)})`} valor={data.percepcionIibb} />
+              </div>
 
-                <div className="flex justify-between items-center text-[#A78BFA]">
-                  <span className="text-sm md:text-lg font-medium">Anticipo Ganancias (6%):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_gan_6)}</span>
-                </div>
+              <div className="flex justify-between items-center text-[#F87171] font-bold pt-3 border-t border-[#2A344C]">
+                <span className="text-sm md:text-lg">Fondos a depositar en Aduana</span>
+                <span className="text-base md:text-xl whitespace-nowrap" style={calculatorMono}>{formatUsd(data.fondosADepositar)}</span>
+              </div>
 
-                <div className="flex justify-between items-center text-[#A78BFA] pb-4 border-b border-[#2A344C]">
-                  <span className="text-sm md:text-lg font-medium">Percepción IIBB (2.5%):</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(data.perc_iibb_2_5)}</span>
-                </div>
+              <Fila label="Honorarios Despachante" valor={data.honorarios} color="text-[#E1E7EF]" />
 
-                <div className="flex justify-between items-center text-[#F87171] font-bold text-lg md:text-xl pt-2">
-                  <span className="text-sm md:text-lg">TOTAL IMPUESTOS:</span>
-                  <span style={calculatorMono}>{formatUsd(data.total_tributos)}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                <div className="border border-[#7C3AED]/40 p-4 rounded-2xl">
+                  <p className="text-xs text-[#94A3B8] font-bold uppercase tracking-wider">Desembolso total</p>
+                  <p className="font-extrabold text-2xl text-white break-words mt-1" style={calculatorMono}>{formatUsd(data.desembolsoTotal)}</p>
+                  <p className="text-xs text-[#94A3B8] mt-1">Mercadería + depósitos + honorarios</p>
                 </div>
-
-                <div className="flex justify-between items-center text-[#E1E7EF] pt-2 border-t border-[#2A344C]">
-                  <span className="text-sm md:text-lg font-medium">Honorarios Despachante:</span>
-                  <span className="text-base md:text-xl font-semibold" style={calculatorMono}>{formatUsd(inputs.honorarios)}</span>
-                </div>
-
-                <div className="bg-[#121A30] border border-[#7C3AED]/40 p-5 md:p-6 rounded-2xl mt-8 shadow-inner relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-[#10B981] rounded-full blur-[60px] opacity-20 -mr-20 -mt-20"></div>
-                  
-                  <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center text-white relative z-10 gap-2 sm:gap-0">
-                    <span className="font-bold text-lg md:text-xl text-[#94A3B8] sm:text-white">Costo Total Estimado:</span>
-                    <span className="font-extrabold text-3xl md:text-4xl text-[#10B981] break-words" style={calculatorMono}>
-                      {formatUsd(data.costo_total_estimado)}
-                    </span>
-                  </div>
-                  
-                  <p className="text-xs md:text-sm text-[#94A3B8] mt-3 sm:mt-2 text-left sm:text-right relative z-10">Mercadería + Tributos + Honorarios</p>
+                <div className="border border-[#10B981]/50 p-4 rounded-2xl bg-[#10B981]/5">
+                  <p className="text-xs text-[#94A3B8] font-bold uppercase tracking-wider">Costo real</p>
+                  <p className="font-extrabold text-2xl text-[#10B981] break-words mt-1" style={calculatorMono}>{formatUsd(data.costoReal)}</p>
+                  <p className="text-xs text-[#94A3B8] mt-1">Sin IVA ni percepciones (Resp. Inscripto)</p>
                 </div>
               </div>
+
+              <p className="text-xs text-[#64748B] pt-2">
+                Estimación referencial. La liquidación oficial es la del SIM (Malvina). Tasa de Estadística con topes del Decreto 1140/2024.
+              </p>
             </div>
 
-            {/* 👇 BOTÓN MÓVIL (Solo visible en celular, lógicamente abajo del total) 👇 */}
-            <button 
+            <button
               onClick={descargarPDF}
-              className="md:hidden w-full mt-8 flex justify-center items-center gap-2 bg-[#10B981] hover:bg-[#059669] text-white font-bold py-4 px-6 rounded-xl shadow-xl border border-[#059669] transition-all"
+              disabled={sinDatos}
+              className="md:hidden w-full mt-8 flex justify-center items-center gap-2 bg-[#10B981] hover:bg-[#059669] disabled:opacity-40 text-white font-bold py-4 px-6 rounded-xl shadow-xl border border-[#059669] transition-all relative z-10"
             >
               📄 Descargar Presupuesto PDF
             </button>
-
           </div>
-
         </div>
       </div>
     </div>

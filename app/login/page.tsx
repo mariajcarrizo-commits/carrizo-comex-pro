@@ -28,6 +28,10 @@ export default function Login() {
 
       if (error) {
         setErrorMsg(error.message === 'User already registered' ? 'Este correo ya tiene una cuenta.' : 'Error al crear la cuenta. Intentá con una contraseña más segura.')
+      } else if (!data.session) {
+        // Si Supabase pide confirmar el email, todavía no hay sesión: no redirigimos.
+        setExitoMsg('¡Cuenta creada! Revisá tu correo para confirmarla y después iniciá sesión.')
+        setEsRegistro(false)
       } else {
         setExitoMsg('¡Cuenta creada con éxito! Iniciando sesión...')
         setTimeout(() => {
