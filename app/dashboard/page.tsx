@@ -33,7 +33,9 @@ export default function Dashboard() {
 
       const rol = perfil?.rol_usuario || 'admin'
       setRolUsuario(rol)
-      if (perfil?.empresa) {
+      // Para un cliente, el "Operador" es el despachante/estudio que le carga las operaciones
+      // (no su propia empresa); se resuelve más abajo.
+      if (rol !== 'cliente' && perfil?.empresa) {
         setNombreEmpresa(perfil.empresa)
       }
 
@@ -54,6 +56,9 @@ export default function Dashboard() {
       } else if (data) {
         if (rol === 'cliente') {
             setOperacionesCliente(data)
+            const { data: operadores } = await supabase.rpc('mis_operadores')
+            const nombres = Array.isArray(operadores) ? operadores.map((o: any) => o.nombre).filter(Boolean) : []
+            setNombreEmpresa(nombres.length > 0 ? nombres.join(' · ') : 'Tu despachante')
         } else {
             const fobSum = data.reduce((acc, op) => acc + (Number(op.fob) || 0), 0)
             const pend = data.filter(op => op.estado === 'Pendiente').length
