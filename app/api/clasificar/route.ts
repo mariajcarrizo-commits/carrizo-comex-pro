@@ -131,6 +131,7 @@ export async function POST(request: Request) {
     let crudo: any = null
     let ultimoError: unknown = null
     for (const [i, nombreModelo] of MODELOS.entries()) {
+      const inicio = Date.now()
       try {
         // Límite de tiempo por modelo para que quede margen de usar el respaldo
         // antes de que Vercel corte la función (maxDuration = 60).
@@ -145,6 +146,7 @@ export async function POST(request: Request) {
         }, { timeout })
         const result = await model.generateContent(prompt)
         crudo = JSON.parse(result.response.text())
+        console.log(`Clasificación OK con ${nombreModelo} en ${Date.now() - inicio} ms`)
         break
       } catch (e) {
         ultimoError = e
