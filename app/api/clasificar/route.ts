@@ -8,6 +8,11 @@ export const dynamic = 'force-dynamic'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
+// Modelo principal (configurable con GEMINI_MODEL) y de respaldo.
+const MODELO_PRINCIPAL = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+const MODELO_RESPALDO = 'gemini-2.5-flash'
+const MODELOS = MODELO_PRINCIPAL === MODELO_RESPALDO ? [MODELO_PRINCIPAL] : [MODELO_PRINCIPAL, MODELO_RESPALDO]
+
 const MAX_DESCRIPCION = 1500
 const LIMITE_POR_HORA = 30
 
@@ -120,17 +125,35 @@ export async function POST(request: Request) {
     }
 
     // 4. Consulta a la IA con salida estructurada.
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: 'application/json',
-        responseSchema: schema,
-      },
-    })
-
-    const result = await model.generateContent(construirPrompt(descripcion, esExpo))
-    const crudo = JSON.parse(result.response.text())
+    // Modelo configurable por variable de entorno; si el principal falla (nombre
+    // no disponible, acceso, cuota), se intenta con el de respaldo.
+    const prompt = construirPrompt(descripcion, esExpo)
+    let crudo: any = null
+    let ultimoError: unknown = null
+    for (const [i, nombreModelo] of MODELOS.entries()) {
+      const inicio = Date.now()
+      try {
+        // Límite de tiempo por modelo para que quede margen de usar el respaldo
+        // antes de que Vercel corte la función (maxDuration = 60).
+        const timeout = i === 0 ? 22000 : 28000
+        const model = genAI.getGenerativeModel({
+          model: nombreModelo,
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+            responseSchema: schema,
+          },
+        }, { timeout })
+        const result = await model.generateContent(prompt)
+        crudo = JSON.parse(result.response.text())
+        console.log(`Clasificación OK con ${nombreModelo} en ${Date.now() - inicio} ms`)
+        break
+      } catch (e) {
+        ultimoError = e
+        console.error(`Falló el modelo ${nombreModelo}:`, e)
+      }
+    }
+    if (crudo === null) throw ultimoError
 
     // 5. Validamos lo que devolvió la IA: descartamos códigos con formato inválido.
     const candidatos = (Array.isArray(crudo?.candidatos) ? crudo.candidatos : [])
