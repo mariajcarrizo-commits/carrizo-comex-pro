@@ -130,8 +130,11 @@ export async function POST(request: Request) {
     const prompt = construirPrompt(descripcion, esExpo)
     let crudo: any = null
     let ultimoError: unknown = null
-    for (const nombreModelo of MODELOS) {
+    for (const [i, nombreModelo] of MODELOS.entries()) {
       try {
+        // Límite de tiempo por modelo para que quede margen de usar el respaldo
+        // antes de que Vercel corte la función (maxDuration = 60).
+        const timeout = i === 0 ? 22000 : 28000
         const model = genAI.getGenerativeModel({
           model: nombreModelo,
           generationConfig: {
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
             responseMimeType: 'application/json',
             responseSchema: schema,
           },
-        })
+        }, { timeout })
         const result = await model.generateContent(prompt)
         crudo = JSON.parse(result.response.text())
         break
