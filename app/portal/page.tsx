@@ -7,6 +7,7 @@ export default function PortalCliente() {
   const [operaciones, setOperaciones] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
   const [usuarioEmail, setUsuarioEmail] = useState<string | null>(null)
+  const [operador, setOperador] = useState('Tu despachante')
 
   useEffect(() => {
     const cargarDatosDelCliente = async () => {
@@ -28,6 +29,11 @@ export default function PortalCliente() {
         if (!error && data) {
           setOperaciones(data)
         }
+
+        // Nombre del despachante / estudio que le carga las operaciones
+        const { data: operadores } = await supabase.rpc('mis_operadores')
+        const nombres = Array.isArray(operadores) ? operadores.map((o: any) => o.nombre).filter(Boolean) : []
+        if (nombres.length > 0) setOperador(nombres.join(' · '))
       }
       setCargando(false)
     }
@@ -64,7 +70,7 @@ export default function PortalCliente() {
             </div>
             <div className="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/20">
               <span className="text-sm font-medium text-slate-300">Operador:</span>
-              <span className="ml-2 font-bold text-white">CARRIZO Comex</span>
+              <span className="ml-2 font-bold text-white">{operador}</span>
             </div>
           </div>
         </div>
