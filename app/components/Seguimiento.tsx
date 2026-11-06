@@ -16,6 +16,15 @@ export type Hito = {
   visible_cliente: boolean
 }
 
+type Registro = {
+  id: string
+  hito_nombre: string
+  accion: string
+  detalle: string | null
+  por: string | null
+  creado_en: string
+}
+
 type Props = {
   operacionId: string
   /** true para el despachante; false para el cliente (solo lectura) */
@@ -53,6 +62,8 @@ export default function Seguimiento({ operacionId, editable = false, producto, t
   const [detalle, setDetalle] = useState<string | null>(null)
   const [telefono, setTelefono] = useState(telefonoInicial || '')
   const [email, setEmail] = useState('')
+  const [verHistorial, setVerHistorial] = useState(false)
+  const [historial, setHistorial] = useState<Registro[]>([])
 
   const cargar = useCallback(async () => {
     const { data, error } = await supabase
@@ -63,6 +74,16 @@ export default function Seguimiento({ operacionId, editable = false, producto, t
     if (error) setAviso('No pudimos cargar el seguimiento. Probá de nuevo.')
     else setHitos((data as Hito[]) || [])
     setCargando(false)
+  }, [operacionId])
+
+  const cargarHistorial = useCallback(async () => {
+    const { data } = await supabase
+      .from('hitos_bitacora')
+      .select('id, hito_nombre, accion, detalle, por, creado_en')
+      .eq('operacion_id', operacionId)
+      .order('creado_en', { ascending: false })
+      .limit(50)
+    setHistorial((data as Registro[]) || [])
   }, [operacionId])
 
   useEffect(() => {
@@ -88,6 +109,7 @@ export default function Seguimiento({ operacionId, editable = false, producto, t
       setAviso('No se pudo guardar el cambio. Probá de nuevo.')
     } else {
       onCambio?.()
+      if (verHistorial) cargarHistorial()
     }
   }
 
@@ -112,6 +134,12 @@ export default function Seguimiento({ operacionId, editable = false, producto, t
       (siguiente ? `El próximo paso es: ${siguiente.nombre}. ` : 'Con esto la operación quedó completa. ') +
       `Podés ver el detalle en ${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard`
     return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`
+  }
+
+  const alternarHistorial = () => {
+    const abrir = !verHistorial
+    setVerHistorial(abrir)
+    if (abrir) cargarHistorial()
   }
 
   if (cargando) {
@@ -221,6 +249,30 @@ export default function Seguimiento({ operacionId, editable = false, producto, t
           )
         })}
       </ol>
+
+      {editable && (
+        <div className="mt-4">
+          <button onClick={alternarHistorial} className="text-xs font-bold text-slate-500 hover:text-slate-800">
+            {verHistorial ? 'Ocultar historial de cambios ▲' : 'Ver historial de cambios ▼'}
+          </button>
+          {verHistorial && (
+            <ul className="mt-2 space-y-1 text-xs text-slate-600 max-h-56 overflow-y-auto">
+              {historial.length === 0 ? (
+                <li className="text-slate-400">Todavía no hay cambios registrados.</li>
+              ) : (
+                historial.map(r => (
+                  <li key={r.id} className="flex flex-wrap gap-x-2 border-b border-slate-100 pb-1">
+                    <span className="text-slate-400">{new Date(r.creado_en).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="font-bold text-slate-700">{r.hito_nombre}</span>
+                    <span>{r.accion}{r.detalle ? `: ${r.detalle}` : ''}</span>
+                    {r.por && <span className="text-slate-400">· {r.por}</span>}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -32,8 +32,8 @@ export default function OperacionesDashboard() {
     setResumenHitos(resumen)
   }
 
-  const cargarOperaciones = async () => {
-    setCargando(true)
+  const cargarOperaciones = async (silencioso = false) => {
+    if (!silencioso) setCargando(true)
     const { data: { user } } = await supabase.auth.getUser()
     const emailUsuario = user?.email
 
@@ -369,7 +369,7 @@ export default function OperacionesDashboard() {
                     {abierta === op.id && (
                       <tr className="bg-slate-50">
                         <td colSpan={6} className="p-0">
-                          <Seguimiento operacionId={op.id} editable producto={op.producto} telefonoInicial={op.telefono_cliente} onCambio={cargarResumenHitos} />
+                          <Seguimiento operacionId={op.id} editable producto={op.producto} telefonoInicial={op.telefono_cliente} onCambio={() => cargarOperaciones(true)} />
                         </td>
                       </tr>
                     )}
