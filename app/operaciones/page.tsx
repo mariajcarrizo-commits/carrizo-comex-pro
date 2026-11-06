@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
+import Seguimiento from '../components/Seguimiento'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { calcularImportacion, calcularExportacion, calcularHonorarios, formatUsd, formatPct, numeroSeguro } from '../../lib/tributos'
@@ -10,6 +11,26 @@ import { calcularImportacion, calcularExportacion, calcularHonorarios, formatUsd
 export default function OperacionesDashboard() {
   const [operaciones, setOperaciones] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
+  const [abierta, setAbierta] = useState<string | null>(null)
+  const [resumenHitos, setResumenHitos] = useState<Record<string, { hechos: number; total: number; proximo: string | null }>>({})
+
+  // Avance de cada operación (para mostrarlo en la lista sin abrir el detalle).
+  const cargarResumenHitos = async () => {
+    const { data } = await supabase
+      .from('hitos_operacion')
+      .select('operacion_id, estado, nombre, orden')
+      .order('orden', { ascending: true })
+      .limit(5000)
+    const resumen: Record<string, { hechos: number; total: number; proximo: string | null }> = {}
+    for (const h of data || []) {
+      const r = resumen[h.operacion_id] || (resumen[h.operacion_id] = { hechos: 0, total: 0, proximo: null })
+      if (h.estado === 'omitido') continue
+      r.total += 1
+      if (h.estado === 'hecho') r.hechos += 1
+      else if (!r.proximo) r.proximo = h.nombre
+    }
+    setResumenHitos(resumen)
+  }
 
   const cargarOperaciones = async () => {
     setCargando(true)
@@ -43,6 +64,7 @@ export default function OperacionesDashboard() {
       console.error("Error al cargar operaciones:", error)
     } else {
       setOperaciones(data || [])
+      cargarResumenHitos()
     }
     setCargando(false)
   }
@@ -286,7 +308,8 @@ export default function OperacionesDashboard() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {operaciones.map((op) => (
-                    <tr key={op.id} className="hover:bg-slate-50 transition-colors">
+                    <Fragment key={op.id}>
+                    <tr className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">
                         <div className="font-bold text-slate-700 bg-slate-100 inline-block px-3 py-1 rounded-lg">
                           {new Date(op.created_at).toLocaleDateString('es-AR')}
@@ -322,16 +345,35 @@ export default function OperacionesDashboard() {
                             {op.estado}
                           </span>
                           {calcularAlerta(op.fecha_vencimiento)}
+                          {resumenHitos[op.id] && resumenHitos[op.id].total > 0 && (
+                            <button onClick={() => setAbierta(abierta === op.id ? null : op.id)} className="mt-2 w-full text-left" title="Ver el seguimiento">
+                              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500" style={{ width: `${Math.round((resumenHitos[op.id].hechos / resumenHitos[op.id].total) * 100)}%` }} />
+                              </div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                {resumenHitos[op.id].hechos} de {resumenHitos[op.id].total} pasos{resumenHitos[op.id].proximo ? ` · Próximo: ${resumenHitos[op.id].proximo}` : ' · Completa'}
+                              </div>
+                            </button>
+                          )}
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => setAbierta(abierta === op.id ? null : op.id)} className={`p-2 rounded-lg transition-all ${abierta === op.id ? 'text-purple-700 bg-purple-50' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}`} title="Seguimiento de la operación">📍</button>
                           <button onClick={() => generarPDF(op)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Descargar Proforma PDF">📄</button>
                           <Link href={`/operaciones/editar/${op.id}`} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all flex items-center justify-center" title="Editar Operación">✏️</Link>
                           <button onClick={() => eliminarOperacion(op.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">🗑️</button>
                         </div>
                       </td>
                     </tr>
+                    {abierta === op.id && (
+                      <tr className="bg-slate-50">
+                        <td colSpan={6} className="p-0">
+                          <Seguimiento operacionId={op.id} editable producto={op.producto} telefonoInicial={op.telefono_cliente} onCambio={cargarResumenHitos} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
