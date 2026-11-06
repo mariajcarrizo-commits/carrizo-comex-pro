@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI, SchemaType, type ResponseSchema } from '@google/generative-ai'
 import { createClient } from '@supabase/supabase-js'
+import { consultarEscalonada } from '../../../lib/consultaEscalonada'
 
 // La IA puede tardar: evitamos que Vercel corte la función antes de tiempo.
 export const maxDuration = 60
@@ -11,7 +12,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 // Modelo principal (configurable con GEMINI_MODEL) y de respaldo.
 const MODELO_PRINCIPAL = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
 const MODELO_RESPALDO = 'gemini-2.5-flash'
-const MODELOS = MODELO_PRINCIPAL === MODELO_RESPALDO ? [MODELO_PRINCIPAL] : [MODELO_PRINCIPAL, MODELO_RESPALDO]
+const MODELO_RESERVA = 'gemini-2.5-flash-lite'
+const MODELOS = Array.from(new Set([MODELO_PRINCIPAL, MODELO_RESPALDO, MODELO_RESERVA]))
+// Si el principal no respondió en 9 s se suma el respaldo; a los 18 s, la reserva.
+const RETRASOS_MS = [0, 9000, 18000]
+const LIMITE_TOTAL_MS = 50000
 
 const MAX_DESCRIPCION = 1500
 const LIMITE_POR_HORA = 30
@@ -125,35 +130,43 @@ export async function POST(request: Request) {
     }
 
     // 4. Consulta a la IA con salida estructurada.
-    // Modelo configurable por variable de entorno; si el principal falla (nombre
-    // no disponible, acceso, cuota), se intenta con el de respaldo.
+    // Los modelos se consultan de forma escalonada: si el principal tarda o falla
+    // (demora, cuota, alta demanda), se suma el respaldo sin esperar; gana el primero que responde.
     const prompt = construirPrompt(descripcion, esExpo)
-    let crudo: any = null
-    let ultimoError: unknown = null
-    for (const [i, nombreModelo] of MODELOS.entries()) {
-      const inicio = Date.now()
-      try {
-        // Límite de tiempo por modelo para que quede margen de usar el respaldo
-        // antes de que Vercel corte la función (maxDuration = 60).
-        const timeout = i === 0 ? 22000 : 28000
-        const model = genAI.getGenerativeModel({
-          model: nombreModelo,
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-            responseSchema: schema,
-          },
-        }, { timeout })
-        const result = await model.generateContent(prompt)
-        crudo = JSON.parse(result.response.text())
-        console.log(`Clasificación OK con ${nombreModelo} en ${Date.now() - inicio} ms`)
-        break
-      } catch (e) {
-        ultimoError = e
-        console.error(`Falló el modelo ${nombreModelo}:`, e)
-      }
+    const inicio = Date.now()
+    let crudo: any
+    try {
+      const { resultado, modelo } = await consultarEscalonada<any>({
+        modelos: MODELOS,
+        retrasos: RETRASOS_MS,
+        limiteMs: LIMITE_TOTAL_MS,
+        consultar: async (nombreModelo, timeout) => {
+          const model = genAI.getGenerativeModel({
+            model: nombreModelo,
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: 'application/json',
+              responseSchema: schema,
+            },
+          }, { timeout })
+          const result = await model.generateContent(prompt)
+          return JSON.parse(result.response.text())
+        },
+        onFallo: (nombreModelo, e) => console.error(`Falló el modelo ${nombreModelo}:`, e),
+      })
+      crudo = resultado
+      console.log(`Clasificación OK con ${modelo} en ${Date.now() - inicio} ms`)
+    } catch (e) {
+      console.error('Todos los modelos de IA fallaron:', e)
+      const texto = String((e as any)?.message ?? e)
+      const saturado = /503|429|high demand|overloaded|quota|abort/i.test(texto)
+      return NextResponse.json(
+        { error: saturado
+            ? 'El servicio de IA está con mucha demanda en este momento. Probá de nuevo en unos segundos.'
+            : 'No pudimos conectar con el Agente Aduanero (IA). Probá de nuevo en unos segundos.' },
+        { status: 503 }
+      )
     }
-    if (crudo === null) throw ultimoError
 
     // 5. Validamos lo que devolvió la IA: descartamos códigos con formato inválido.
     const candidatos = (Array.isArray(crudo?.candidatos) ? crudo.candidatos : [])
