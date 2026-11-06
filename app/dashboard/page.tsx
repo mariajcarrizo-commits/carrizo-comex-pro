@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
+import Seguimiento from '../components/Seguimiento'
 
 export default function Dashboard() {
   const [rolUsuario, setRolUsuario] = useState('admin')
   const [emailUser, setEmailUser] = useState('')
   const [nombreEmpresa, setNombreEmpresa] = useState('Operador Independiente')
   const [operacionesCliente, setOperacionesCliente] = useState<any[]>([])
+  const [abierta, setAbierta] = useState<string | null>(null)
 
   const [metricas, setMetricas] = useState({
     total: 0, fobTotal: 0, pendientes: 0, importaciones: 0, exportaciones: 0
@@ -124,7 +126,8 @@ export default function Dashboard() {
                        </thead>
                        <tbody>
                          {operacionesCliente.map((op) => (
-                            <tr key={op.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                           <Fragment key={op.id}>
+                            <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setAbierta(abierta === op.id ? null : op.id)}>
                               <td className="p-4">
                                  <div className="font-bold text-slate-900">#OP-{op.id.substring(0,6).toUpperCase()}</div>
                                  <div className="text-xs text-slate-500 mt-1">{new Date(op.created_at).toLocaleDateString('es-AR')}</div>
@@ -139,8 +142,17 @@ export default function Dashboard() {
                                   <span className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 shadow-sm">
                                     {op.estado}
                                   </span>
+                                  <div className="text-xs font-bold text-purple-600 mt-2">{abierta === op.id ? 'Ocultar seguimiento ▲' : 'Ver seguimiento ▼'}</div>
                               </td>
                             </tr>
+                            {abierta === op.id && (
+                              <tr className="bg-slate-50 border-b border-slate-100">
+                                <td colSpan={3} className="p-0">
+                                  <Seguimiento operacionId={op.id} />
+                                </td>
+                              </tr>
+                            )}
+                           </Fragment>
                          ))}
                        </tbody>
                      </table>
